@@ -1,0 +1,58 @@
+{
+    "Buy": {
+        "abstract": false,
+        "name": "Buy",
+        "kind": "contract",
+        "base_contracts": [],
+        "fields": [
+            {
+                "inherited_from": "",
+                "visibility": "public",
+                "name": "balances"
+            },
+            {
+                "inherited_from": "",
+                "visibility": "internal",
+                "name": "wallet"
+            },
+            {
+                "inherited_from": "",
+                "visibility": "internal",
+                "name": "owner"
+            }
+        ],
+        "functions": [
+            {
+                "inherited_from": "",
+                "abstract": false,
+                "visibility": "public",
+                "signature": "constructor(address payable)",
+                "return_signature": "()",
+                "name": "constructor",
+                "modifiers": []
+            },
+            {
+                "inherited_from": "",
+                "abstract": false,
+                "visibility": "public",
+                "signature": "buyToken(string, uint8)",
+                "return_signature": "(uint8)",
+                "name": "buyToken",
+                "modifiers": [
+                    "onlyOwner",
+                    "onlyWhileOpen"
+                ]
+            }
+        ],
+        "modifiers": [
+            {
+                "name": "onlyOwner",
+                "visibility": "internal"
+            },
+            {
+                "name": "onlyWhileOpen",
+                "visibility": "internal"
+            }
+        ]
+    }
+}
