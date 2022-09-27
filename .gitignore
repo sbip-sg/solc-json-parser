@@ -1,2 +1,8 @@
 # ignore mac files
 *.DS_Store
+
+# ignore vscode files
+.vscode
+
+__pycache__
+
