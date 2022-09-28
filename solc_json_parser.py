@@ -229,6 +229,32 @@ def parse(solc_json_ast:dict, version, filename:str):
     add_inherited_function_fields(data_dict)
     save_info_json(data_dict, filename)
 
+################################################################################
+# 1. the following methods need to be implemented, you can take reference from https://verazt.slack.com/files/U0405RJUNLD/F0423LMJF5Z/solidity_ast.py
+# ./solidity_ast.py:62:    def all_contracts(self) -> List[Node]:
+# ./solidity_ast.py:74:    def all_abstract_contracts(self) -> List[Node]:
+# ./solidity_ast.py:81:    def get_version(unit) -> str:
+# ./solidity_ast.py:105:    def base_contracts_names(self) -> List[str]:
+# ./solidity_ast.py:115:    def pruned_contracts(self) -> List[Node]:
+# ./solidity_ast.py:126:    def pruned_contract_names(self) -> List[str]:
+# ./solidity_ast.py:129:    def fields_in_contract(self,
+# ./solidity_ast.py:161:    def contract_by_name(self, contract_name: str) -> Node:
+# ./solidity_ast.py:167:    def fields_in_contract_by_name(self, contract_name: str, name_only: bool = False, field_visibility: Optional[frozenset] = None,  parent_field_visibility: Optional[frozenset] = FIELD_VISIBILITY_NON_PRIVATE):
+# ./solidity_ast.py:172:    def functions_in_contract(self, contract: Node, name_only: bool = False, function_visibility: Optional[frozenset] = None, check_base_contract=True):
+# ./solidity_ast.py:193:    def functions_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
+# ./solidity_ast.py:198:    def abstract_functions_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
+# ./solidity_ast.py:211:    def function_by_name(self, contract_name: str, function_name: str):
+# ./solidity_ast.py:216:    def get_all_literals(self):
+# ./solidity_ast.py:236:    def get_all_address(self):
+# ./solidity_ast.py:241:    def get_fallback_functions(self, contract_name: str):
+# 2. please consider using class if necessary
+# 3. consider adding test cases in `tests/test_parser.py`
+# 4. either define necessary data structure (with data class, type
+#    hint (https://docs.python.org/3/library/typing.html) for example)
+#    or add documentation and/or example data indicating the expected
+#    input and output.
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="path to source code", default="./contracts/whole.sol")
