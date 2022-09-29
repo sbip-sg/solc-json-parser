@@ -21,7 +21,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "constructor(address payable,)",
+                "signature": "constructor(address payable)",
                 "return_signature": "()",
                 "name": "constructor",
                 "modifiers": []
