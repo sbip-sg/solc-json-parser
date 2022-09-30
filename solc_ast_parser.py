@@ -6,7 +6,7 @@ import solcx
 import json
 import os
 from typing import Dict, Optional, List, Any, Tuple
-from functools import cached_property
+from functools import cached_property, cache
 from fields import Field, Function, ContractData, Modifier
 from version_cfg import v_keys
 
@@ -15,12 +15,11 @@ PARSED_JSON = "./parsed_json"
 
 class SolidityAST():
 
-    FIELD_VISIBILITY_ALL = frozenset(
-        ('default', 'internal', 'public', 'private'))
+    FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
     FIELD_VISIBILITY_NON_PRIVATE = frozenset(('default', 'internal', 'public'))
 
-    FUNC_VISIBILITY_ALL = frozenset(
-        ('external', 'private', 'internal', 'public'))
+    FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
+    FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
     def __init__(self, contract_source_path: str):
         self.contract_source_path: str = contract_source_path
@@ -30,7 +29,7 @@ class SolidityAST():
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
 
-        self.save_solc_ast_json(os.path.basename(self.contract_source_path))
+        # self.save_solc_ast_json(os.path.basename(self.contract_source_path))
 
         self.exported_symbols = None # to be determined in _parse()
         self.contracts_dict: Dict = self._parse()
@@ -223,7 +222,7 @@ class SolidityAST():
             elif node[keys.name] == "ContractDefinition":
                 contract = self._process_contract(node)
                 data_dict[contract.name] = contract
-                print(contract.name)
+                # print(contract.name)
 
         _add_inherited_function_fields(data_dict)
 
@@ -260,6 +259,9 @@ class SolidityAST():
         # dict to list
         return list(self.contracts_dict.values())
 
+    def all_contract_names(self) -> List[str]:
+        return list(self.contracts_dict.keys())
+
     def all_abstract_contracts(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.abstract]
 
@@ -267,29 +269,25 @@ class SolidityAST():
         return self.version
 
 
-    def base_contracts_names(self) -> List[str]:
+    def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
         base_contracts_name = []
         for contract in contracts:
-            if not contract.base_contracts:
-                base_contracts_name.append(contract.name)
-        return base_contracts_name
+            if contract.base_contracts:
+                base_contracts_name += contract.base_contracts
+        return list(set(base_contracts_name))
 
     def pruned_contracts(self) -> List[ContractData]:
         contracts = self.all_contracts()
+        base_contracts_name = self.base_contract_names()
         pruned_contracts = []
         for contract in contracts:
-            if contract.base_contracts:
+            if contract.name not in base_contracts_name:
                 pruned_contracts.append(contract)
         return pruned_contracts
 
     def pruned_contract_names(self) -> List[str]:
-        contracts = self.all_contracts()
-        pruned_contracts_name = []
-        for contract in contracts:
-            if contract.base_contracts:
-                pruned_contracts_name.append(contract.name)
-        return pruned_contracts_name
+        return [c.name for c in self.pruned_contracts()]
 
     def contract_by_name(self, contract_name: str) -> ContractData:
         return self.contracts_dict[contract_name]
@@ -303,14 +301,25 @@ class SolidityAST():
         if (field_visibility is not None) and not (field_visibility == self.FIELD_VISIBILITY_ALL):
             fields = [n for n in fields if n.visibility in field_visibility]
 
+        # contract.fields has already included the base fields
         if not with_base_fields:
-            return [f.name if name_only else f for f in fields]
+            fields = [n for n in fields if n.inherited_from == ''] # remove all base fields
+        else:
+            temp = []
+            for field in fields:
+                # fields contains all, so if inherited_from is not '', it is inherited and
+                # we need to check the visibility(e.g. sometimes private can not be included here)
+                if field.inherited_from != '':
+                    if field.visibility in parent_field_visibility:
+                        temp.append(field)
+                else:
+                    temp.append(field)
+            # base_contract_names = contract.base_contracts
+            # base_fields = [f for c in base_contract_names
+            #                for f in self.fields_in_contract_by_name(c, field_visibility=parent_field_visibility)]
+            fields = temp
 
-        base_contract_names = contract.base_contracts
-        base_fields = [f for c in base_contract_names
-                       for f in self.fields_in_contract_by_name(c, field_visibility=parent_field_visibility)]
-
-        return [f.name if name_only else f for f in base_fields + fields]
+        return [f.name if name_only else f for f in fields]
 
     def fields_in_contract_by_name(self, contract_name: str,
                                    name_only: bool = False,

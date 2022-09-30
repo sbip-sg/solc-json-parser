@@ -11,6 +11,7 @@ abstract contract A {
 
     // accessible to itself and by the inherited contract
     uint256 internal level = 23;
+    uint256 private  private_var = 666;
     // same as internal
     uint256 step = 23;
     mapping(address => uint256) balancesA;
