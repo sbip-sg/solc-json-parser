@@ -88,11 +88,10 @@ class SolidityAST():
             parameters  = None
             return_type = None
             for i in range(len(node.get('children'))):
-                if node.get('name') == "ParameterList":
+                if node.get('children')[i].get('name') == "ParameterList":
                     parameters  = node.get('children')[i]
                     return_type = node.get('children')[i+1]
                     break
-
 
             if node.get("attributes").get("modifiers") is None:
                 modifier_nodes = {"modifiers": node.get('children')[2:-1]}
@@ -100,6 +99,9 @@ class SolidityAST():
                 modifier_nodes = {"modifiers": []}
             node = node.get("attributes") # get attributes, the structure is different
 
+
+        assert parameters is not None
+        assert return_type is not None
         visibility = node.get('visibility')
         if node.get('name') is None or node.get('name') == "":
             name = node.get("kind") # for constructor
@@ -171,7 +173,7 @@ class SolidityAST():
         for node in node.get(keys.children):
             if node[keys.name] == "FunctionDefinition":
                 functions.append(self._process_function(node))
-                print(functions)
+                # print(functions)
             elif node[keys.name] == "VariableDeclaration":
                 fields.append(self._process_field(node))
             elif node[keys.name] == "ModifierDefinition":
@@ -368,5 +370,6 @@ class SolidityAST():
 
 if __name__ == '__main__':
     ast = SolidityAST(f'./contracts/inheritance_contracts.sol')
+    ast.save_parsed_info_json('inheritance_contracts')
     # self.assertEqual('0.7.2', ast.get_version(), 'Version should be 0.7.2')
     print(ast.get_version())
