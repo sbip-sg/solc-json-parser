@@ -64,15 +64,25 @@ class TestParser(unittest.TestCase):
     def test_fields_in_contract_by_name(self):
         ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
 
-        # fields all
+        # fields_a all
         fields_name_a = set(ast.fields_in_contract_by_name('A', name_only=True, field_visibility=self.FIELD_VISIBILITY_ALL))
         expected_fields_name_a = {'offering', 'threshold', 'level', 'balancesA', 'step', 'private_var'}
         self.assertEqual(expected_fields_name_a, fields_name_a, 'Fields_a should be identified correctly')
 
-        # fields non-private
+        # fields_a non-private
         fields_name_a = set(ast.fields_in_contract_by_name('A', name_only=True, field_visibility=self.FIELD_VISIBILITY_NON_PRIVATE))
         expected_fields_name_a = {'offering', 'threshold', 'level', 'balancesA', 'step'}
         self.assertEqual(expected_fields_name_a, fields_name_a, 'Fields_a should be identified correctly')
+
+        # fields_c
+        fields_name_c = set(ast.fields_in_contract_by_name('C', name_only=True, with_base_fields=True))
+        expected_fields_name_c = {'owner', 'b', 'grade', 'mc', 'offering', 'level', 'threshold', 'balancesA', 'step'}
+        self.assertEqual(expected_fields_name_c, fields_name_c, 'Fields_c with base should be identified correctly')
+
+        # fields_c without base fields
+        fields_name_c = set(ast.fields_in_contract_by_name('C', name_only=True, with_base_fields=False))
+        expected_fields_name_c = {'owner', 'b', 'grade', 'mc'}
+        self.assertEqual(expected_fields_name_c, fields_name_c, 'Fields_c without base should be identified correctly')
 
     def test_functions_in_contract_by_name_with_name_only(self):
         ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
@@ -80,8 +90,23 @@ class TestParser(unittest.TestCase):
         functions_a = set(ast.functions_in_contract_by_name('A', name_only=True))
         expected_functions_a = {'absfunc', 'emptyfunc', 'receive'}
         self.assertEqual(expected_functions_a, functions_a, 'Functions_a should be identified correctly')
-        # functions all
 
+        functions_b = set(ast.functions_in_contract_by_name('B', name_only=True))
+        expected_functions_b = {'constructor', 'touch'}
+        self.assertEqual(expected_functions_b, functions_b, 'Functions_b should be identified correctly')
+
+        functions_c = set(ast.functions_in_contract_by_name('C', name_only=True, check_base_contract=False))
+        expected_functions_c = {'constructor', 'absfunc', 'cmasking', 'sweep', 'guess', 'cread', 'cwrite'}
+        self.assertEqual(expected_functions_c, functions_c, 'Functions_c should be identified correctly')
+
+        functions_c = set(ast.functions_in_contract_by_name('C', name_only=True, check_base_contract=True))
+        expected_functions_c = {'constructor', 'absfunc', 'cmasking', 'sweep', 'guess', 'cread', 'cwrite',
+                                'emptyfunc', 'receive'}
+        self.assertEqual(expected_functions_c, functions_c, 'Functions_c should be identified correctly')
+
+
+    def test_abstract_function_in_contract_by_name(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

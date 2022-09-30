@@ -324,22 +324,22 @@ class SolidityAST():
     def fields_in_contract_by_name(self, contract_name: str,
                                    name_only: bool = False,
                                    field_visibility: Optional[frozenset] = None,
-                                   parent_field_visibility: Optional[frozenset] = FIELD_VISIBILITY_NON_PRIVATE) -> List[Field]:
+                                   parent_field_visibility: Optional[frozenset] = FIELD_VISIBILITY_NON_PRIVATE,
+                                   with_base_fields=False) -> List[Field]:
         contract = self.contract_by_name(contract_name)
-        return self.fields_in_contract(contract, name_only, field_visibility, parent_field_visibility)
+        return self.fields_in_contract(contract, name_only, field_visibility, parent_field_visibility, with_base_fields)
 
     def functions_in_contract(self, contract: ContractData,
                               name_only: bool = False,
                               function_visibility: Optional[frozenset] = None,
-                              check_base_contract=True) -> List[Function]:
+                              check_base_contract=False) -> List[Function]:
+
+        # by default, base contract's functions are included
+        # different from fields, we don't check parent function visibility
         functions = contract.functions
         base_contract = []
-        if check_base_contract:
-            base_contract = contract.base_contracts
-
-        for base_contract_name in base_contract:
-            function_list = self.functions_in_contract_by_name(base_contract_name)
-            functions.extend(function_list)
+        if not check_base_contract:
+            functions = [n for n in functions if n.inherited_from == '']
 
         if (function_visibility is not None) and (function_visibility != self.FUNC_VISIBILITY_ALL):
             functions = [n for n in functions if n.visibility in function_visibility]
@@ -348,12 +348,21 @@ class SolidityAST():
             return [n.name for n in functions]
         return functions
 
+    def functions_in_contract_by_name(self, contract_name: str,
+                                      name_only: bool = False,
+                                      function_visibility: Optional[frozenset] = None,
+                                      check_base_contract=False) -> List[Function | str]:
+        # fns = self.contract_by_name(contract_name).functions
+        # if check_base_contract:
+        #     pass # do nothing
+        # else:
+        #     fns = [fn for fn in fns if fn.inherited_from == '']
+        #
+        # if name_only:
+        #     return [fn.name for fn in fns]
 
-    def functions_in_contract_by_name(self, contract_name: str, name_only: bool = False, ) -> List[Function | str]:
-        fns = self.contract_by_name(contract_name).functions
-        if name_only:
-            return [fn.name for fn in fns]
-        return fns
+        contract = self.contract_by_name(contract_name)
+        return self.functions_in_contract(contract, name_only, function_visibility, check_base_contract)
 
     def abstract_function_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Function | str]:
         # return all abstract functions for a given "contract name"
