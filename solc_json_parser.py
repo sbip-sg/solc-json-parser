@@ -17,21 +17,21 @@ def get_version_key(version):
 
 def save_solc_ast(out, name):
     with open(f'./{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
-        json.dump(out, f)
+        json.dump(out, f, indent=4)
 def compile_to_json(source_code_path):
     
-    def get_version(source_code):
+    def _get_version(source_code):
         return source_code.split("pragma solidity")[1].split(";")[0].strip().replace('^', '').replace('=','')
     
-    def get_source_code(source_code_path):
+    def _get_source_code(source_code_path):
         # gettting source code from file
         with open(source_code_path, "r") as f:
             source = f.read()
         return source
 
-    source_code = get_source_code(source_code_path)
+    source_code = _get_source_code(source_code_path)
     # print(source_code)
-    version = get_version(source_code)
+    version = _get_version(source_code)
     print("downloading compiler, version: ", version)
     solcx.install_solc(version)
     solcx.set_solc_version(version)
@@ -48,9 +48,7 @@ def get_base_contracts(data):
 
 
 def process_function(node, version_key):
-    def get_signature(function_name, parameters, version_key):
-        # TODO function_name?
-        # function_name = ""
+    def _get_signature(function_name, parameters, version_key):
         signature = "" + function_name + "("
         param_type_str = ""
         if version_key == "v8":
@@ -64,7 +62,7 @@ def process_function(node, version_key):
         signature += param_type_str + ")"
         return signature
     
-    def get_modifiers(node, version_key):
+    def _get_modifiers(node, version_key):
         modifiers = []
         if version_key == "v8":
             for modifier in node['modifiers']:
@@ -87,7 +85,6 @@ def process_function(node, version_key):
         parameters  = node.get('children')[0]
         return_type = node.get('children')[1]
         if node.get("attributes").get("modifiers") is None:
-            # modifier_nodes = [] 
             modifier_nodes = {"modifiers": node.get('children')[2:-1]}
         else:
             modifier_nodes = {"modifiers": [None]}
@@ -103,15 +100,11 @@ def process_function(node, version_key):
     
     inherited_from = ""
     abstract  = not node.get('implemented')
-    # modifiers = [modifier for modifier in node.get('modifiers') if modifier]
-    # for modifier in node.get('modifiers'):
-    # modifiers = []
-    # remove null in modifiers list
-    modifiers = get_modifiers(modifier_nodes, version_key)
+    modifiers = _get_modifiers(modifier_nodes, version_key)
     
     
-    signature        = get_signature(name, parameters,  version_key)
-    return_signature = get_signature("",   return_type, version_key)
+    signature        = _get_signature(name, parameters,  version_key)
+    return_signature = _get_signature("",   return_type, version_key)
     return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility,
                     signature=signature, name=name, return_signature=return_signature, modifiers=modifiers)
 
@@ -191,7 +184,7 @@ def process_contract(node, version_key):
 
 def parse(solc_json_ast:dict, version, filename:str):
     
-    def add_inherited_function_fields(data_dict: dict):
+    def _add_inherited_function_fields(data_dict: dict):
         for contract_name, contract in data_dict.items():
             if len(contract.base_contracts) != 0:
                 for base_contract_name in contract.base_contracts:
@@ -205,7 +198,7 @@ def parse(solc_json_ast:dict, version, filename:str):
                         new_function.inherited_from = base_contract_name
                         contract.functions.append(new_function)
     
-    def save_info_json(data_dict ,filename):
+    def _save_info_json(data_dict ,filename):
         with open(f'./{PARSED_JSON}/{filename}.json', 'w') as f:
             json.dump(data_dict, f, default=lambda obj: obj.__dict__, indent=4)
             
@@ -226,8 +219,8 @@ def parse(solc_json_ast:dict, version, filename:str):
             contract = process_contract(node, version_key)
             data_dict[contract.name] = contract
             
-    add_inherited_function_fields(data_dict)
-    save_info_json(data_dict, filename)
+    _add_inherited_function_fields(data_dict)
+    _save_info_json(data_dict, filename)
 
 ################################################################################
 # 1. the following methods need to be implemented, you can take reference from https://verazt.slack.com/files/U0405RJUNLD/F0423LMJF5Z/solidity_ast.py

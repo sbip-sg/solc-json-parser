@@ -20,7 +20,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -29,11 +29,12 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "BEPOwnable": {
         "abstract": true,
@@ -64,7 +65,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "owner()",
-                "return_signature": "(addres)",
+                "return_signature": "(address)",
                 "name": "owner",
                 "modifiers": []
             },
@@ -73,7 +74,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "isOwner()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "isOwner",
                 "modifiers": []
             },
@@ -85,47 +86,25 @@
                 "return_signature": "()",
                 "name": "renounceOwnership",
                 "modifiers": [
-                    {
-                        "id": 99,
-                        "modifierName": {
-                            "id": 98,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2691:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2691:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferOwnership(addres)",
+                "signature": "transferOwnership(address)",
                 "return_signature": "()",
                 "name": "transferOwnership",
                 "modifiers": [
-                    {
-                        "id": 123,
-                        "modifierName": {
-                            "id": 122,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2973:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2973:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transferOwnership(addres)",
+                "signature": "_transferOwnership(address)",
                 "return_signature": "()",
                 "name": "_transferOwnership",
                 "modifiers": []
@@ -144,7 +123,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -153,9 +132,15 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
+            }
+        ],
+        "modifiers": [
+            {
+                "name": "onlyOwner",
+                "visibility": "internal"
             }
         ]
     },
@@ -184,33 +169,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "pause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "pause",
                 "modifiers": [
-                    {
-                        "id": 191,
-                        "modifierName": {
-                            "id": 190,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "3988:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3988:9:0"
-                    },
-                    {
-                        "id": 193,
-                        "modifierName": {
-                            "id": 192,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "3998:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3998:13:0"
-                    }
+                    "onlyOwner",
+                    "whenNotPaused"
                 ]
             },
             {
@@ -218,33 +181,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "unpause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "unpause",
                 "modifiers": [
-                    {
-                        "id": 211,
-                        "modifierName": {
-                            "id": 210,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "4194:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4194:9:0"
-                    },
-                    {
-                        "id": 213,
-                        "modifierName": {
-                            "id": 212,
-                            "name": "whenPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 187,
-                            "src": "4204:10:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4204:10:0"
-                    }
+                    "onlyOwner",
+                    "whenPaused"
                 ]
             },
             {
@@ -261,7 +202,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "owner()",
-                "return_signature": "(addres)",
+                "return_signature": "(address)",
                 "name": "owner",
                 "modifiers": []
             },
@@ -270,7 +211,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "isOwner()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "isOwner",
                 "modifiers": []
             },
@@ -282,47 +223,25 @@
                 "return_signature": "()",
                 "name": "renounceOwnership",
                 "modifiers": [
-                    {
-                        "id": 99,
-                        "modifierName": {
-                            "id": 98,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2691:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2691:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "BEPOwnable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferOwnership(addres)",
+                "signature": "transferOwnership(address)",
                 "return_signature": "()",
                 "name": "transferOwnership",
                 "modifiers": [
-                    {
-                        "id": 123,
-                        "modifierName": {
-                            "id": 122,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2973:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2973:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "BEPOwnable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transferOwnership(addres)",
+                "signature": "_transferOwnership(address)",
                 "return_signature": "()",
                 "name": "_transferOwnership",
                 "modifiers": []
@@ -341,7 +260,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -350,9 +269,19 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
+            }
+        ],
+        "modifiers": [
+            {
+                "name": "whenNotPaused",
+                "visibility": "internal"
+            },
+            {
+                "name": "whenPaused",
+                "visibility": "internal"
             }
         ]
     },
@@ -373,8 +302,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "toString(uint25)",
-                "return_signature": "(strin)",
+                "signature": "toString(uint256)",
+                "return_signature": "(string)",
                 "name": "toString",
                 "modifiers": []
             },
@@ -382,8 +311,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "toHexString(uint25)",
-                "return_signature": "(strin)",
+                "signature": "toHexString(uint256)",
+                "return_signature": "(string)",
                 "name": "toHexString",
                 "modifiers": []
             },
@@ -391,12 +320,13 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "toHexString(uint256,uint25)",
-                "return_signature": "(strin)",
+                "signature": "toHexString(uint256, uint256)",
+                "return_signature": "(string)",
                 "name": "toHexString",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "Address": {
         "abstract": false,
@@ -409,8 +339,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "isContract(addres)",
-                "return_signature": "(boo)",
+                "signature": "isContract(address)",
+                "return_signature": "(bool)",
                 "name": "isContract",
                 "modifiers": []
             },
@@ -418,7 +348,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "sendValue(address payable,uint25)",
+                "signature": "sendValue(address payable, uint256)",
                 "return_signature": "()",
                 "name": "sendValue",
                 "modifiers": []
@@ -427,8 +357,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionCall(address,byte)",
-                "return_signature": "(byte)",
+                "signature": "functionCall(address, bytes)",
+                "return_signature": "(bytes)",
                 "name": "functionCall",
                 "modifiers": []
             },
@@ -436,8 +366,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionCall(address,bytes,strin)",
-                "return_signature": "(byte)",
+                "signature": "functionCall(address, bytes, string)",
+                "return_signature": "(bytes)",
                 "name": "functionCall",
                 "modifiers": []
             },
@@ -445,8 +375,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionCallWithValue(address,bytes,uint25)",
-                "return_signature": "(byte)",
+                "signature": "functionCallWithValue(address, bytes, uint256)",
+                "return_signature": "(bytes)",
                 "name": "functionCallWithValue",
                 "modifiers": []
             },
@@ -454,8 +384,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionCallWithValue(address,bytes,uint256,strin)",
-                "return_signature": "(byte)",
+                "signature": "functionCallWithValue(address, bytes, uint256, string)",
+                "return_signature": "(bytes)",
                 "name": "functionCallWithValue",
                 "modifiers": []
             },
@@ -463,8 +393,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionStaticCall(address,byte)",
-                "return_signature": "(byte)",
+                "signature": "functionStaticCall(address, bytes)",
+                "return_signature": "(bytes)",
                 "name": "functionStaticCall",
                 "modifiers": []
             },
@@ -472,8 +402,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionStaticCall(address,bytes,strin)",
-                "return_signature": "(byte)",
+                "signature": "functionStaticCall(address, bytes, string)",
+                "return_signature": "(bytes)",
                 "name": "functionStaticCall",
                 "modifiers": []
             },
@@ -481,8 +411,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionDelegateCall(address,byte)",
-                "return_signature": "(byte)",
+                "signature": "functionDelegateCall(address, bytes)",
+                "return_signature": "(bytes)",
                 "name": "functionDelegateCall",
                 "modifiers": []
             },
@@ -490,8 +420,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "functionDelegateCall(address,bytes,strin)",
-                "return_signature": "(byte)",
+                "signature": "functionDelegateCall(address, bytes, string)",
+                "return_signature": "(bytes)",
                 "name": "functionDelegateCall",
                 "modifiers": []
             },
@@ -499,12 +429,13 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "verifyCallResult(bool,bytes,strin)",
-                "return_signature": "(byte)",
+                "signature": "verifyCallResult(bool, bytes, string)",
+                "return_signature": "(bytes)",
                 "name": "verifyCallResult",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "IERC721Receiver": {
         "abstract": false,
@@ -517,12 +448,13 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "onERC721Received(address,address,uint256,byte)",
-                "return_signature": "(bytes)",
+                "signature": "onERC721Received(address, address, uint256, bytes)",
+                "return_signature": "(bytes4)",
                 "name": "onERC721Received",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "IERC165": {
         "abstract": false,
@@ -535,12 +467,13 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "ERC165": {
         "abstract": true,
@@ -555,8 +488,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -564,12 +497,13 @@
                 "inherited_from": "IERC165",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "IERC721": {
         "abstract": false,
@@ -584,8 +518,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -593,8 +527,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -602,7 +536,7 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -611,7 +545,7 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -620,7 +554,7 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -629,8 +563,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -638,7 +572,7 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -647,8 +581,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -656,7 +590,7 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -665,12 +599,13 @@
                 "inherited_from": "IERC165",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "IERC721Enumerable": {
         "abstract": false,
@@ -686,7 +621,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "totalSupply()",
-                "return_signature": "(uint25)",
+                "return_signature": "(uint256)",
                 "name": "totalSupply",
                 "modifiers": []
             },
@@ -694,8 +629,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenOfOwnerByIndex(address,uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenOfOwnerByIndex(address, uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenOfOwnerByIndex",
                 "modifiers": []
             },
@@ -703,8 +638,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenByIndex(uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenByIndex(uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenByIndex",
                 "modifiers": []
             },
@@ -712,8 +647,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -721,8 +656,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -730,7 +665,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -739,7 +674,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -748,7 +683,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -757,8 +692,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -766,7 +701,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -775,8 +710,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -784,7 +719,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -793,12 +728,13 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "IERC721Metadata": {
         "abstract": false,
@@ -814,7 +750,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -823,7 +759,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -831,8 +767,8 @@
                 "inherited_from": "",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -840,8 +776,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -849,8 +785,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -858,7 +794,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -867,7 +803,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -876,7 +812,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -885,8 +821,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -894,7 +830,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -903,8 +839,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -912,7 +848,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -921,12 +857,13 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "ERC721": {
         "abstract": false,
@@ -986,7 +923,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "constructor(string,strin)",
+                "signature": "constructor(string, string)",
                 "return_signature": "()",
                 "name": "constructor",
                 "modifiers": []
@@ -995,8 +932,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1004,8 +941,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -1013,8 +950,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -1023,7 +960,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -1032,7 +969,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -1041,7 +978,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "decimals()",
-                "return_signature": "(uint)",
+                "return_signature": "(uint8)",
                 "name": "decimals",
                 "modifiers": []
             },
@@ -1049,8 +986,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -1059,7 +996,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_baseURI()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "_baseURI",
                 "modifiers": []
             },
@@ -1067,161 +1004,84 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": [
-                    {
-                        "id": 1173,
-                        "modifierName": {
-                            "id": 1172,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "27674:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "27674:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": [
-                    {
-                        "id": 1216,
-                        "modifierName": {
-                            "id": 1215,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28142:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28142:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": [
-                    {
-                        "id": 1241,
-                        "modifierName": {
-                            "id": 1240,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28462:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28462:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": [
-                    {
-                        "id": 1260,
-                        "modifierName": {
-                            "id": 1259,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28694:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28694:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": [
-                    {
-                        "id": 1282,
-                        "modifierName": {
-                            "id": 1281,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28968:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28968:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1311,
-                        "modifierName": {
-                            "id": 1310,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29382:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29382:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1334,
-                        "modifierName": {
-                            "id": 1333,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29669:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29669:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeTransfer(address,address,uint256,byte)",
+                "signature": "_safeTransfer(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeTransfer",
                 "modifiers": []
@@ -1230,8 +1090,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_exists(uint25)",
-                "return_signature": "(boo)",
+                "signature": "_exists(uint256)",
+                "return_signature": "(bool)",
                 "name": "_exists",
                 "modifiers": []
             },
@@ -1239,8 +1099,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_isApprovedOrOwner(address,uint25)",
-                "return_signature": "(boo)",
+                "signature": "_isApprovedOrOwner(address, uint256)",
+                "return_signature": "(bool)",
                 "name": "_isApprovedOrOwner",
                 "modifiers": []
             },
@@ -1248,7 +1108,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint25)",
+                "signature": "_safeMint(address, uint256)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -1257,7 +1117,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint256,byte)",
+                "signature": "_safeMint(address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -1266,7 +1126,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_mint(address,uint25)",
+                "signature": "_mint(address, uint256)",
                 "return_signature": "()",
                 "name": "_mint",
                 "modifiers": []
@@ -1275,7 +1135,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_burn(uint25)",
+                "signature": "_burn(uint256)",
                 "return_signature": "()",
                 "name": "_burn",
                 "modifiers": []
@@ -1284,7 +1144,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transfer(address,address,uint25)",
+                "signature": "_transfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_transfer",
                 "modifiers": []
@@ -1293,7 +1153,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_approve(address,uint25)",
+                "signature": "_approve(address, uint256)",
                 "return_signature": "()",
                 "name": "_approve",
                 "modifiers": []
@@ -1302,7 +1162,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_setApprovalForAll(address,address,boo)",
+                "signature": "_setApprovalForAll(address, address, bool)",
                 "return_signature": "()",
                 "name": "_setApprovalForAll",
                 "modifiers": []
@@ -1311,8 +1171,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_checkOnERC721Received(address,address,uint256,byte)",
-                "return_signature": "(boo)",
+                "signature": "_checkOnERC721Received(address, address, uint256, bytes)",
+                "return_signature": "(bool)",
                 "name": "_checkOnERC721Received",
                 "modifiers": []
             },
@@ -1320,7 +1180,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_beforeTokenTransfer(address,address,uint25)",
+                "signature": "_beforeTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_beforeTokenTransfer",
                 "modifiers": []
@@ -1329,7 +1189,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_afterTokenTransfer(address,address,uint25)",
+                "signature": "_afterTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_afterTokenTransfer",
                 "modifiers": []
@@ -1348,7 +1208,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -1357,7 +1217,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             },
@@ -1365,8 +1225,8 @@
                 "inherited_from": "ERC165",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1374,8 +1234,8 @@
                 "inherited_from": "ERC165",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1383,8 +1243,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -1392,8 +1252,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -1401,7 +1261,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -1410,7 +1270,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -1419,7 +1279,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -1428,8 +1288,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -1437,7 +1297,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -1446,8 +1306,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -1455,7 +1315,7 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -1464,8 +1324,8 @@
                 "inherited_from": "IERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1474,7 +1334,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -1483,7 +1343,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -1491,8 +1351,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -1500,8 +1360,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -1509,8 +1369,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -1518,7 +1378,7 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -1527,7 +1387,7 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -1536,7 +1396,7 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -1545,8 +1405,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -1554,7 +1414,7 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -1563,8 +1423,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -1572,7 +1432,7 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -1581,8 +1441,8 @@
                 "inherited_from": "IERC721Metadata",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1591,33 +1451,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "pause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "pause",
                 "modifiers": [
-                    {
-                        "id": 191,
-                        "modifierName": {
-                            "id": 190,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "3988:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3988:9:0"
-                    },
-                    {
-                        "id": 193,
-                        "modifierName": {
-                            "id": 192,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "3998:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3998:13:0"
-                    }
+                    "onlyOwner",
+                    "whenNotPaused"
                 ]
             },
             {
@@ -1625,33 +1463,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "unpause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "unpause",
                 "modifiers": [
-                    {
-                        "id": 211,
-                        "modifierName": {
-                            "id": 210,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "4194:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4194:9:0"
-                    },
-                    {
-                        "id": 213,
-                        "modifierName": {
-                            "id": 212,
-                            "name": "whenPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 187,
-                            "src": "4204:10:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4204:10:0"
-                    }
+                    "onlyOwner",
+                    "whenPaused"
                 ]
             },
             {
@@ -1668,7 +1484,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "owner()",
-                "return_signature": "(addres)",
+                "return_signature": "(address)",
                 "name": "owner",
                 "modifiers": []
             },
@@ -1677,7 +1493,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "isOwner()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "isOwner",
                 "modifiers": []
             },
@@ -1689,47 +1505,25 @@
                 "return_signature": "()",
                 "name": "renounceOwnership",
                 "modifiers": [
-                    {
-                        "id": 99,
-                        "modifierName": {
-                            "id": 98,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2691:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2691:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "BEPPausable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferOwnership(addres)",
+                "signature": "transferOwnership(address)",
                 "return_signature": "()",
                 "name": "transferOwnership",
                 "modifiers": [
-                    {
-                        "id": 123,
-                        "modifierName": {
-                            "id": 122,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2973:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2973:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "BEPPausable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transferOwnership(addres)",
+                "signature": "_transferOwnership(address)",
                 "return_signature": "()",
                 "name": "_transferOwnership",
                 "modifiers": []
@@ -1748,7 +1542,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -1757,11 +1551,12 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "ERC721Enumerable": {
         "abstract": true,
@@ -1838,8 +1633,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1847,8 +1642,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenOfOwnerByIndex(address,uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenOfOwnerByIndex(address, uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenOfOwnerByIndex",
                 "modifiers": []
             },
@@ -1857,7 +1652,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "totalSupply()",
-                "return_signature": "(uint25)",
+                "return_signature": "(uint256)",
                 "name": "totalSupply",
                 "modifiers": []
             },
@@ -1865,8 +1660,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenByIndex(uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenByIndex(uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenByIndex",
                 "modifiers": []
             },
@@ -1874,7 +1669,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_beforeTokenTransfer(address,address,uint25)",
+                "signature": "_beforeTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_beforeTokenTransfer",
                 "modifiers": []
@@ -1883,7 +1678,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_addTokenToOwnerEnumeration(address,uint25)",
+                "signature": "_addTokenToOwnerEnumeration(address, uint256)",
                 "return_signature": "()",
                 "name": "_addTokenToOwnerEnumeration",
                 "modifiers": []
@@ -1892,7 +1687,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_addTokenToAllTokensEnumeration(uint25)",
+                "signature": "_addTokenToAllTokensEnumeration(uint256)",
                 "return_signature": "()",
                 "name": "_addTokenToAllTokensEnumeration",
                 "modifiers": []
@@ -1901,7 +1696,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_removeTokenFromOwnerEnumeration(address,uint25)",
+                "signature": "_removeTokenFromOwnerEnumeration(address, uint256)",
                 "return_signature": "()",
                 "name": "_removeTokenFromOwnerEnumeration",
                 "modifiers": []
@@ -1910,7 +1705,7 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_removeTokenFromAllTokensEnumeration(uint25)",
+                "signature": "_removeTokenFromAllTokensEnumeration(uint256)",
                 "return_signature": "()",
                 "name": "_removeTokenFromAllTokensEnumeration",
                 "modifiers": []
@@ -1919,8 +1714,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_tokensOfOwner(address,uint256,uint25)",
-                "return_signature": "(uint256[)",
+                "signature": "_tokensOfOwner(address, uint256, uint256)",
+                "return_signature": "(uint256[])",
                 "name": "_tokensOfOwner",
                 "modifiers": []
             },
@@ -1928,8 +1723,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_getAllToken(uint256,uint25)",
-                "return_signature": "(uint256[],address[)",
+                "signature": "_getAllToken(uint256, uint256)",
+                "return_signature": "(uint256[], address[])",
                 "name": "_getAllToken",
                 "modifiers": []
             },
@@ -1937,7 +1732,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "constructor(string,strin)",
+                "signature": "constructor(string, string)",
                 "return_signature": "()",
                 "name": "constructor",
                 "modifiers": []
@@ -1946,8 +1741,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -1955,8 +1750,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -1964,8 +1759,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -1974,7 +1769,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -1983,7 +1778,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -1992,7 +1787,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "decimals()",
-                "return_signature": "(uint)",
+                "return_signature": "(uint8)",
                 "name": "decimals",
                 "modifiers": []
             },
@@ -2000,8 +1795,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -2010,7 +1805,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_baseURI()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "_baseURI",
                 "modifiers": []
             },
@@ -2018,161 +1813,84 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": [
-                    {
-                        "id": 1173,
-                        "modifierName": {
-                            "id": 1172,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "27674:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "27674:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": [
-                    {
-                        "id": 1216,
-                        "modifierName": {
-                            "id": 1215,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28142:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28142:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": [
-                    {
-                        "id": 1241,
-                        "modifierName": {
-                            "id": 1240,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28462:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28462:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": [
-                    {
-                        "id": 1260,
-                        "modifierName": {
-                            "id": 1259,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28694:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28694:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": [
-                    {
-                        "id": 1282,
-                        "modifierName": {
-                            "id": 1281,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28968:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28968:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1311,
-                        "modifierName": {
-                            "id": 1310,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29382:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29382:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1334,
-                        "modifierName": {
-                            "id": 1333,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29669:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29669:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeTransfer(address,address,uint256,byte)",
+                "signature": "_safeTransfer(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeTransfer",
                 "modifiers": []
@@ -2181,8 +1899,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_exists(uint25)",
-                "return_signature": "(boo)",
+                "signature": "_exists(uint256)",
+                "return_signature": "(bool)",
                 "name": "_exists",
                 "modifiers": []
             },
@@ -2190,8 +1908,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_isApprovedOrOwner(address,uint25)",
-                "return_signature": "(boo)",
+                "signature": "_isApprovedOrOwner(address, uint256)",
+                "return_signature": "(bool)",
                 "name": "_isApprovedOrOwner",
                 "modifiers": []
             },
@@ -2199,7 +1917,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint25)",
+                "signature": "_safeMint(address, uint256)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -2208,7 +1926,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint256,byte)",
+                "signature": "_safeMint(address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -2217,7 +1935,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_mint(address,uint25)",
+                "signature": "_mint(address, uint256)",
                 "return_signature": "()",
                 "name": "_mint",
                 "modifiers": []
@@ -2226,7 +1944,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_burn(uint25)",
+                "signature": "_burn(uint256)",
                 "return_signature": "()",
                 "name": "_burn",
                 "modifiers": []
@@ -2235,7 +1953,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transfer(address,address,uint25)",
+                "signature": "_transfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_transfer",
                 "modifiers": []
@@ -2244,7 +1962,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_approve(address,uint25)",
+                "signature": "_approve(address, uint256)",
                 "return_signature": "()",
                 "name": "_approve",
                 "modifiers": []
@@ -2253,7 +1971,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_setApprovalForAll(address,address,boo)",
+                "signature": "_setApprovalForAll(address, address, bool)",
                 "return_signature": "()",
                 "name": "_setApprovalForAll",
                 "modifiers": []
@@ -2262,8 +1980,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_checkOnERC721Received(address,address,uint256,byte)",
-                "return_signature": "(boo)",
+                "signature": "_checkOnERC721Received(address, address, uint256, bytes)",
+                "return_signature": "(bool)",
                 "name": "_checkOnERC721Received",
                 "modifiers": []
             },
@@ -2271,7 +1989,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_beforeTokenTransfer(address,address,uint25)",
+                "signature": "_beforeTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_beforeTokenTransfer",
                 "modifiers": []
@@ -2280,7 +1998,7 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_afterTokenTransfer(address,address,uint25)",
+                "signature": "_afterTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_afterTokenTransfer",
                 "modifiers": []
@@ -2299,7 +2017,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -2308,7 +2026,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             },
@@ -2316,8 +2034,8 @@
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -2325,8 +2043,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -2334,8 +2052,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -2343,8 +2061,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -2352,7 +2070,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2361,7 +2079,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -2370,7 +2088,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -2379,8 +2097,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -2388,7 +2106,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -2397,8 +2115,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -2406,7 +2124,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2415,8 +2133,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -2425,7 +2143,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -2434,7 +2152,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -2442,8 +2160,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -2451,8 +2169,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -2460,8 +2178,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -2469,7 +2187,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2478,7 +2196,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -2487,7 +2205,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -2496,8 +2214,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -2505,7 +2223,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -2514,8 +2232,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -2523,7 +2241,7 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2532,8 +2250,8 @@
                 "inherited_from": "ERC721",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -2542,33 +2260,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "pause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "pause",
                 "modifiers": [
-                    {
-                        "id": 191,
-                        "modifierName": {
-                            "id": 190,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "3988:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3988:9:0"
-                    },
-                    {
-                        "id": 193,
-                        "modifierName": {
-                            "id": 192,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "3998:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3998:13:0"
-                    }
+                    "onlyOwner",
+                    "whenNotPaused"
                 ]
             },
             {
@@ -2576,33 +2272,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "unpause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "unpause",
                 "modifiers": [
-                    {
-                        "id": 211,
-                        "modifierName": {
-                            "id": 210,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "4194:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4194:9:0"
-                    },
-                    {
-                        "id": 213,
-                        "modifierName": {
-                            "id": 212,
-                            "name": "whenPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 187,
-                            "src": "4204:10:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4204:10:0"
-                    }
+                    "onlyOwner",
+                    "whenPaused"
                 ]
             },
             {
@@ -2619,7 +2293,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "owner()",
-                "return_signature": "(addres)",
+                "return_signature": "(address)",
                 "name": "owner",
                 "modifiers": []
             },
@@ -2628,7 +2302,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "isOwner()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "isOwner",
                 "modifiers": []
             },
@@ -2640,47 +2314,25 @@
                 "return_signature": "()",
                 "name": "renounceOwnership",
                 "modifiers": [
-                    {
-                        "id": 99,
-                        "modifierName": {
-                            "id": 98,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2691:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2691:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferOwnership(addres)",
+                "signature": "transferOwnership(address)",
                 "return_signature": "()",
                 "name": "transferOwnership",
                 "modifiers": [
-                    {
-                        "id": 123,
-                        "modifierName": {
-                            "id": 122,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2973:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2973:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "ERC721",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transferOwnership(addres)",
+                "signature": "_transferOwnership(address)",
                 "return_signature": "()",
                 "name": "_transferOwnership",
                 "modifiers": []
@@ -2699,7 +2351,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -2708,7 +2360,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             },
@@ -2717,7 +2369,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "totalSupply()",
-                "return_signature": "(uint25)",
+                "return_signature": "(uint256)",
                 "name": "totalSupply",
                 "modifiers": []
             },
@@ -2725,8 +2377,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenOfOwnerByIndex(address,uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenOfOwnerByIndex(address, uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenOfOwnerByIndex",
                 "modifiers": []
             },
@@ -2734,8 +2386,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenByIndex(uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenByIndex(uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenByIndex",
                 "modifiers": []
             },
@@ -2743,8 +2395,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -2752,8 +2404,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -2761,7 +2413,7 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2770,7 +2422,7 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -2779,7 +2431,7 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -2788,8 +2440,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -2797,7 +2449,7 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -2806,8 +2458,8 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -2815,7 +2467,7 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -2824,12 +2476,13 @@
                 "inherited_from": "IERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     },
     "BeeArmyRankNFT": {
         "abstract": false,
@@ -2919,81 +2572,25 @@
                 "return_signature": "()",
                 "name": "constructor",
                 "modifiers": [
-                    {
-                        "arguments": [
-                            {
-                                "hexValue": "4265652041726d792052616e6b204e4654",
-                                "id": 2409,
-                                "isConstant": false,
-                                "isLValue": false,
-                                "isPure": true,
-                                "kind": "string",
-                                "lValueRequested": false,
-                                "nodeType": "Literal",
-                                "src": "47198:19:0",
-                                "typeDescriptions": {
-                                    "typeIdentifier": "t_stringliteral_62a04da8b314fdc09e2287df3aa6006f96b635199b7acf6186dc99516f348e53",
-                                    "typeString": "literal_string \"Bee Army Rank NFT\""
-                                },
-                                "value": "Bee Army Rank NFT"
-                            },
-                            {
-                                "hexValue": "42656541726d7952616e6b4e4654",
-                                "id": 2410,
-                                "isConstant": false,
-                                "isLValue": false,
-                                "isPure": true,
-                                "kind": "string",
-                                "lValueRequested": false,
-                                "nodeType": "Literal",
-                                "src": "47219:16:0",
-                                "typeDescriptions": {
-                                    "typeIdentifier": "t_stringliteral_f841244fd67f3fe21e5e5099226881bce159a8f864a194df0d727fa8944bcd48",
-                                    "typeString": "literal_string \"BeeArmyRankNFT\""
-                                },
-                                "value": "BeeArmyRankNFT"
-                            }
-                        ],
-                        "id": 2411,
-                        "modifierName": {
-                            "id": 2408,
-                            "name": "ERC721",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 1828,
-                            "src": "47191:6:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "47191:45:0"
-                    }
+                    "ERC721"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "external",
-                "signature": "setAdmin(addres)",
+                "signature": "setAdmin(address)",
                 "return_signature": "()",
                 "name": "setAdmin",
                 "modifiers": [
-                    {
-                        "id": 2423,
-                        "modifierName": {
-                            "id": 2422,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "47352:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "47352:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "external",
-                "signature": "mintTo(addres)",
+                "signature": "mintTo(address)",
                 "return_signature": "()",
                 "name": "mintTo",
                 "modifiers": []
@@ -3012,7 +2609,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_baseURI()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "_baseURI",
                 "modifiers": []
             },
@@ -3020,8 +2617,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "external",
-                "signature": "tokensOfOwner(addres)",
-                "return_signature": "(uint256[)",
+                "signature": "tokensOfOwner(address)",
+                "return_signature": "(uint256[])",
                 "name": "tokensOfOwner",
                 "modifiers": []
             },
@@ -3029,8 +2626,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "external",
-                "signature": "tokensOfOwnerv2(address,uint256,uint25)",
-                "return_signature": "(uint256[)",
+                "signature": "tokensOfOwnerv2(address, uint256, uint256)",
+                "return_signature": "(uint256[])",
                 "name": "tokensOfOwnerv2",
                 "modifiers": []
             },
@@ -3039,7 +2636,7 @@
                 "abstract": false,
                 "visibility": "external",
                 "signature": "getAllToken()",
-                "return_signature": "(uint256[],address[)",
+                "return_signature": "(uint256[], address[])",
                 "name": "getAllToken",
                 "modifiers": []
             },
@@ -3047,8 +2644,8 @@
                 "inherited_from": "",
                 "abstract": false,
                 "visibility": "external",
-                "signature": "getAllTokenv2(uint256,uint25)",
-                "return_signature": "(uint256[],address[)",
+                "signature": "getAllTokenv2(uint256, uint256)",
+                "return_signature": "(uint256[], address[])",
                 "name": "getAllTokenv2",
                 "modifiers": []
             },
@@ -3056,8 +2653,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3065,8 +2662,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenOfOwnerByIndex(address,uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenOfOwnerByIndex(address, uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenOfOwnerByIndex",
                 "modifiers": []
             },
@@ -3075,7 +2672,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "totalSupply()",
-                "return_signature": "(uint25)",
+                "return_signature": "(uint256)",
                 "name": "totalSupply",
                 "modifiers": []
             },
@@ -3083,8 +2680,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenByIndex(uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenByIndex(uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenByIndex",
                 "modifiers": []
             },
@@ -3092,7 +2689,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_beforeTokenTransfer(address,address,uint25)",
+                "signature": "_beforeTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_beforeTokenTransfer",
                 "modifiers": []
@@ -3101,7 +2698,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_addTokenToOwnerEnumeration(address,uint25)",
+                "signature": "_addTokenToOwnerEnumeration(address, uint256)",
                 "return_signature": "()",
                 "name": "_addTokenToOwnerEnumeration",
                 "modifiers": []
@@ -3110,7 +2707,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_addTokenToAllTokensEnumeration(uint25)",
+                "signature": "_addTokenToAllTokensEnumeration(uint256)",
                 "return_signature": "()",
                 "name": "_addTokenToAllTokensEnumeration",
                 "modifiers": []
@@ -3119,7 +2716,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_removeTokenFromOwnerEnumeration(address,uint25)",
+                "signature": "_removeTokenFromOwnerEnumeration(address, uint256)",
                 "return_signature": "()",
                 "name": "_removeTokenFromOwnerEnumeration",
                 "modifiers": []
@@ -3128,7 +2725,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_removeTokenFromAllTokensEnumeration(uint25)",
+                "signature": "_removeTokenFromAllTokensEnumeration(uint256)",
                 "return_signature": "()",
                 "name": "_removeTokenFromAllTokensEnumeration",
                 "modifiers": []
@@ -3137,8 +2734,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_tokensOfOwner(address,uint256,uint25)",
-                "return_signature": "(uint256[)",
+                "signature": "_tokensOfOwner(address, uint256, uint256)",
+                "return_signature": "(uint256[])",
                 "name": "_tokensOfOwner",
                 "modifiers": []
             },
@@ -3146,8 +2743,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_getAllToken(uint256,uint25)",
-                "return_signature": "(uint256[],address[)",
+                "signature": "_getAllToken(uint256, uint256)",
+                "return_signature": "(uint256[], address[])",
                 "name": "_getAllToken",
                 "modifiers": []
             },
@@ -3155,7 +2752,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "constructor(string,strin)",
+                "signature": "constructor(string, string)",
                 "return_signature": "()",
                 "name": "constructor",
                 "modifiers": []
@@ -3164,8 +2761,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3173,8 +2770,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -3182,8 +2779,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -3192,7 +2789,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -3201,7 +2798,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -3210,7 +2807,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "decimals()",
-                "return_signature": "(uint)",
+                "return_signature": "(uint8)",
                 "name": "decimals",
                 "modifiers": []
             },
@@ -3218,8 +2815,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -3228,7 +2825,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_baseURI()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "_baseURI",
                 "modifiers": []
             },
@@ -3236,161 +2833,84 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": [
-                    {
-                        "id": 1173,
-                        "modifierName": {
-                            "id": 1172,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "27674:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "27674:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": [
-                    {
-                        "id": 1216,
-                        "modifierName": {
-                            "id": 1215,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28142:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28142:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": [
-                    {
-                        "id": 1241,
-                        "modifierName": {
-                            "id": 1240,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28462:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28462:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": [
-                    {
-                        "id": 1260,
-                        "modifierName": {
-                            "id": 1259,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28694:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28694:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": [
-                    {
-                        "id": 1282,
-                        "modifierName": {
-                            "id": 1281,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "28968:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "28968:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1311,
-                        "modifierName": {
-                            "id": 1310,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29382:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29382:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": [
-                    {
-                        "id": 1334,
-                        "modifierName": {
-                            "id": 1333,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "29669:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "29669:13:0"
-                    }
+                    "whenNotPaused"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeTransfer(address,address,uint256,byte)",
+                "signature": "_safeTransfer(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeTransfer",
                 "modifiers": []
@@ -3399,8 +2919,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_exists(uint25)",
-                "return_signature": "(boo)",
+                "signature": "_exists(uint256)",
+                "return_signature": "(bool)",
                 "name": "_exists",
                 "modifiers": []
             },
@@ -3408,8 +2928,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_isApprovedOrOwner(address,uint25)",
-                "return_signature": "(boo)",
+                "signature": "_isApprovedOrOwner(address, uint256)",
+                "return_signature": "(bool)",
                 "name": "_isApprovedOrOwner",
                 "modifiers": []
             },
@@ -3417,7 +2937,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint25)",
+                "signature": "_safeMint(address, uint256)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -3426,7 +2946,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_safeMint(address,uint256,byte)",
+                "signature": "_safeMint(address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "_safeMint",
                 "modifiers": []
@@ -3435,7 +2955,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_mint(address,uint25)",
+                "signature": "_mint(address, uint256)",
                 "return_signature": "()",
                 "name": "_mint",
                 "modifiers": []
@@ -3444,7 +2964,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_burn(uint25)",
+                "signature": "_burn(uint256)",
                 "return_signature": "()",
                 "name": "_burn",
                 "modifiers": []
@@ -3453,7 +2973,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transfer(address,address,uint25)",
+                "signature": "_transfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_transfer",
                 "modifiers": []
@@ -3462,7 +2982,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_approve(address,uint25)",
+                "signature": "_approve(address, uint256)",
                 "return_signature": "()",
                 "name": "_approve",
                 "modifiers": []
@@ -3471,7 +2991,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_setApprovalForAll(address,address,boo)",
+                "signature": "_setApprovalForAll(address, address, bool)",
                 "return_signature": "()",
                 "name": "_setApprovalForAll",
                 "modifiers": []
@@ -3480,8 +3000,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "private",
-                "signature": "_checkOnERC721Received(address,address,uint256,byte)",
-                "return_signature": "(boo)",
+                "signature": "_checkOnERC721Received(address, address, uint256, bytes)",
+                "return_signature": "(bool)",
                 "name": "_checkOnERC721Received",
                 "modifiers": []
             },
@@ -3489,7 +3009,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_beforeTokenTransfer(address,address,uint25)",
+                "signature": "_beforeTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_beforeTokenTransfer",
                 "modifiers": []
@@ -3498,7 +3018,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_afterTokenTransfer(address,address,uint25)",
+                "signature": "_afterTokenTransfer(address, address, uint256)",
                 "return_signature": "()",
                 "name": "_afterTokenTransfer",
                 "modifiers": []
@@ -3517,7 +3037,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -3526,7 +3046,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             },
@@ -3534,8 +3054,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3543,8 +3063,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3552,8 +3072,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -3561,8 +3081,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -3570,7 +3090,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -3579,7 +3099,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -3588,7 +3108,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -3597,8 +3117,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -3606,7 +3126,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -3615,8 +3135,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -3624,7 +3144,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -3633,8 +3153,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3643,7 +3163,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "name()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "name",
                 "modifiers": []
             },
@@ -3652,7 +3172,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "symbol()",
-                "return_signature": "(strin)",
+                "return_signature": "(string)",
                 "name": "symbol",
                 "modifiers": []
             },
@@ -3660,8 +3180,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenURI(uint25)",
-                "return_signature": "(strin)",
+                "signature": "tokenURI(uint256)",
+                "return_signature": "(string)",
                 "name": "tokenURI",
                 "modifiers": []
             },
@@ -3669,8 +3189,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -3678,8 +3198,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -3687,7 +3207,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -3696,7 +3216,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -3705,7 +3225,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -3714,8 +3234,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -3723,7 +3243,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -3732,8 +3252,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -3741,7 +3261,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -3750,8 +3270,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             },
@@ -3760,33 +3280,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "pause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "pause",
                 "modifiers": [
-                    {
-                        "id": 191,
-                        "modifierName": {
-                            "id": 190,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "3988:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3988:9:0"
-                    },
-                    {
-                        "id": 193,
-                        "modifierName": {
-                            "id": 192,
-                            "name": "whenNotPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 178,
-                            "src": "3998:13:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "3998:13:0"
-                    }
+                    "onlyOwner",
+                    "whenNotPaused"
                 ]
             },
             {
@@ -3794,33 +3292,11 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "unpause()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "unpause",
                 "modifiers": [
-                    {
-                        "id": 211,
-                        "modifierName": {
-                            "id": 210,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "4194:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4194:9:0"
-                    },
-                    {
-                        "id": 213,
-                        "modifierName": {
-                            "id": 212,
-                            "name": "whenPaused",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 187,
-                            "src": "4204:10:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "4204:10:0"
-                    }
+                    "onlyOwner",
+                    "whenPaused"
                 ]
             },
             {
@@ -3837,7 +3313,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "owner()",
-                "return_signature": "(addres)",
+                "return_signature": "(address)",
                 "name": "owner",
                 "modifiers": []
             },
@@ -3846,7 +3322,7 @@
                 "abstract": false,
                 "visibility": "public",
                 "signature": "isOwner()",
-                "return_signature": "(boo)",
+                "return_signature": "(bool)",
                 "name": "isOwner",
                 "modifiers": []
             },
@@ -3858,47 +3334,25 @@
                 "return_signature": "()",
                 "name": "renounceOwnership",
                 "modifiers": [
-                    {
-                        "id": 99,
-                        "modifierName": {
-                            "id": 98,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2691:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2691:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "public",
-                "signature": "transferOwnership(addres)",
+                "signature": "transferOwnership(address)",
                 "return_signature": "()",
                 "name": "transferOwnership",
                 "modifiers": [
-                    {
-                        "id": 123,
-                        "modifierName": {
-                            "id": 122,
-                            "name": "onlyOwner",
-                            "nodeType": "IdentifierPath",
-                            "referencedDeclaration": 83,
-                            "src": "2973:9:0"
-                        },
-                        "nodeType": "ModifierInvocation",
-                        "src": "2973:9:0"
-                    }
+                    "onlyOwner"
                 ]
             },
             {
                 "inherited_from": "ERC721Enumerable",
                 "abstract": false,
                 "visibility": "internal",
-                "signature": "_transferOwnership(addres)",
+                "signature": "_transferOwnership(address)",
                 "return_signature": "()",
                 "name": "_transferOwnership",
                 "modifiers": []
@@ -3917,7 +3371,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgSender()",
-                "return_signature": "(address payabl)",
+                "return_signature": "(address payable)",
                 "name": "_msgSender",
                 "modifiers": []
             },
@@ -3926,7 +3380,7 @@
                 "abstract": false,
                 "visibility": "internal",
                 "signature": "_msgData()",
-                "return_signature": "(byte)",
+                "return_signature": "(bytes)",
                 "name": "_msgData",
                 "modifiers": []
             },
@@ -3935,7 +3389,7 @@
                 "abstract": true,
                 "visibility": "external",
                 "signature": "totalSupply()",
-                "return_signature": "(uint25)",
+                "return_signature": "(uint256)",
                 "name": "totalSupply",
                 "modifiers": []
             },
@@ -3943,8 +3397,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenOfOwnerByIndex(address,uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenOfOwnerByIndex(address, uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenOfOwnerByIndex",
                 "modifiers": []
             },
@@ -3952,8 +3406,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "tokenByIndex(uint25)",
-                "return_signature": "(uint25)",
+                "signature": "tokenByIndex(uint256)",
+                "return_signature": "(uint256)",
                 "name": "tokenByIndex",
                 "modifiers": []
             },
@@ -3961,8 +3415,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "balanceOf(addres)",
-                "return_signature": "(uint25)",
+                "signature": "balanceOf(address)",
+                "return_signature": "(uint256)",
                 "name": "balanceOf",
                 "modifiers": []
             },
@@ -3970,8 +3424,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "ownerOf(uint25)",
-                "return_signature": "(addres)",
+                "signature": "ownerOf(uint256)",
+                "return_signature": "(address)",
                 "name": "ownerOf",
                 "modifiers": []
             },
@@ -3979,7 +3433,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint25)",
+                "signature": "safeTransferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -3988,7 +3442,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "transferFrom(address,address,uint25)",
+                "signature": "transferFrom(address, address, uint256)",
                 "return_signature": "()",
                 "name": "transferFrom",
                 "modifiers": []
@@ -3997,7 +3451,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "approve(address,uint25)",
+                "signature": "approve(address, uint256)",
                 "return_signature": "()",
                 "name": "approve",
                 "modifiers": []
@@ -4006,8 +3460,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "getApproved(uint25)",
-                "return_signature": "(addres)",
+                "signature": "getApproved(uint256)",
+                "return_signature": "(address)",
                 "name": "getApproved",
                 "modifiers": []
             },
@@ -4015,7 +3469,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "setApprovalForAll(address,boo)",
+                "signature": "setApprovalForAll(address, bool)",
                 "return_signature": "()",
                 "name": "setApprovalForAll",
                 "modifiers": []
@@ -4024,8 +3478,8 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "isApprovedForAll(address,addres)",
-                "return_signature": "(boo)",
+                "signature": "isApprovedForAll(address, address)",
+                "return_signature": "(bool)",
                 "name": "isApprovedForAll",
                 "modifiers": []
             },
@@ -4033,7 +3487,7 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "safeTransferFrom(address,address,uint256,byte)",
+                "signature": "safeTransferFrom(address, address, uint256, bytes)",
                 "return_signature": "()",
                 "name": "safeTransferFrom",
                 "modifiers": []
@@ -4042,11 +3496,12 @@
                 "inherited_from": "ERC721Enumerable",
                 "abstract": true,
                 "visibility": "external",
-                "signature": "supportsInterface(bytes)",
-                "return_signature": "(boo)",
+                "signature": "supportsInterface(bytes4)",
+                "return_signature": "(bool)",
                 "name": "supportsInterface",
                 "modifiers": []
             }
-        ]
+        ],
+        "modifiers": []
     }
 }

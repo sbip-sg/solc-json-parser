@@ -6,3 +6,5 @@
 
 __pycache__
 
+solc_json_ast/*.json
+parsed_json/*.json
