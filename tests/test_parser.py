@@ -1,8 +1,6 @@
 import unittest
-
-import solc_json_parser as parser
 from solc_ast_parser import SolidityAST
-contracts_root = '../contracts'
+contracts_root = './contracts'
 
 class TestParser(unittest.TestCase):
     FIELD_VISIBILITY_ALL = frozenset(
@@ -18,7 +16,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual('0.5.1', ast.get_version(), 'Version should be 0.5.1')
 
         ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
-        self.assertEqual('0.7.2', ast.get_version(), 'Version should be 0.7.2')
+        self.assertEqual('>=0.7.2', ast.get_version(), 'Version should be 0.7.2')
 
     def test_all_contract_name(self):
         ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
