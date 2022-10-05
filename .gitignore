@@ -11,3 +11,4 @@ parsed_json/*.json
 
 .idea
 ref.py
+__pycache__/*
