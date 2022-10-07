@@ -103,9 +103,32 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_functions_c, functions_c, 'Functions_c should be identified correctly')
 
 
-    def test_abstract_function_in_contract_by_name(self):
-        pass
+    def test_optional_version_input(self):
+        ast_with_version = SolidityAST(f'{contracts_root}/inheritance_contracts.sol', version='0.7.4')
+        ast_without_version = SolidityAST(f'{contracts_root}/inheritance_contracts.sol', version=None)
+        self.assertEqual('0.7.4', ast_with_version.get_version(), 'AST should be the same with and without version input')
+        self.assertEqual('>=0.7.2', ast_without_version.get_version(), 'AST should be the same with and without version input')
 
+    def test_get_plain_version_from_source(self):
+        def _get_source_code(path) -> str:
+            with open(path, 'r') as f:
+                source_code = f.read()
+            return source_code
+            
+        path = f'{contracts_root}/inheritance_contracts.sol'
+        self.assertEqual('>=0.7.2', SolidityAST.extract_plain_version_from_source_code(source=path), 'Version should be >=0.7.4')
+        source_code = _get_source_code(path)
+        self.assertEqual('>=0.7.2', SolidityAST.extract_plain_version_from_source_code(source=source_code), 'Version should be >=0.7.4')
+        
+        path = f'{contracts_root}/whole.sol'
+        self.assertEqual('^0.8.0', SolidityAST.extract_plain_version_from_source_code(source=path), 'Version should be ^0.8.0')
+        source_code = _get_source_code(path)
+        self.assertEqual('^0.8.0', SolidityAST.extract_plain_version_from_source_code(source=source_code), 'Version should be ^0.8.0')
+ 
+        path = f'{contracts_root}/buy051.sol'
+        self.assertEqual('0.5.1', SolidityAST.extract_plain_version_from_source_code(source=path), 'Version should be 0.5.1')
+        source_code = _get_source_code(path)
+        self.assertEqual('0.5.1', SolidityAST.extract_plain_version_from_source_code(source=source_code), 'Version should be 0.5.1')
 if __name__ == '__main__':
     unittest.main()
 

@@ -21,11 +21,11 @@ class SolidityAST():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str):
+    def __init__(self, contract_source_path: str, version:str=None):
         self.contract_source_path: str = contract_source_path
         self._source_code: str    = self._get_source_code()
-        self.exact_version: str   = self._get_exact_version_from_source_code(self._source_code)
-        self.version:str          = self._get_version_from_source_code(self._source_code)
+        self.exact_version: str   = self._get_exact_version_from_source_code(self._source_code) if version is None else version
+        self.version:str          = self._get_version_from_source_code(self._source_code) if version is None else version
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
@@ -34,6 +34,18 @@ class SolidityAST():
 
         self.exported_symbols = None # to be determined in _parse()
         self.contracts_dict: Dict = self._parse()
+
+    @staticmethod
+    def extract_plain_version_from_source_code(source: str) -> str:
+        #! source can be a file path or a source code string
+        #! first test if it is a file path
+        
+        if os.path.isfile(source):
+            with open(source, 'r') as f:
+                source_code = f.read()
+        elif "pragma solidity" in source:
+            source_code = source
+        return source_code.split("pragma solidity")[1].split(";")[0].strip()
 
     def _get_version_key(self):
         if int(self.exact_version[2]) < 8:
@@ -240,14 +252,20 @@ class SolidityAST():
         return source_code.split("pragma solidity")[1].split(";")[0].strip()\
                 .replace('^', '').replace('=', '').replace('>', '').replace('<', '')
 
+
     def _get_version_from_source_code(self, source_code: str):
         return source_code.split("pragma solidity")[1].split(";")[0].strip()
 
     def compile_sol_to_json_ast(self) -> dict:
         print("downloading compiler, version: ", self.exact_version)
-        solcx.install_solc(self.exact_version)
-        solcx.set_solc_version(self.exact_version)
-        return solcx.compile_source(self._source_code, output_values=['ast'], solc_version=self.exact_version)
+        try:
+            solcx.install_solc(self.exact_version)
+            solcx.set_solc_version(self.exact_version)
+            return solcx.compile_source(self._source_code, output_values=['ast'], solc_version=self.exact_version)
+        except Exception as e:
+            print("Error: ", e)
+            print("Please check if the version is valid")
+            exit(0) 
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
