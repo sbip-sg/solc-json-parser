@@ -118,6 +118,12 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(path)
             self.assertEqual(ver, ast.raw_version)
 
+    def test_parser(self):
+        import glob
+        inputs = glob.glob('contracts/*.sol')
+        for c in inputs :
+            self.assertIsNotNone(SolidityAst(c), f'Test contract failed: {c}')
+
 if __name__ == '__main__':
     unittest.main()
 

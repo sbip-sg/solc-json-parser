@@ -79,6 +79,9 @@ def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     '''
     merged_version = version_str_from_source(source_or_source_file)
 
+    if not merged_version:
+        return None
+
     spec = semantic_version.NpmSpec(merged_version)
     candidates = get_candidates()
 

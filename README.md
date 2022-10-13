@@ -1,6 +1,21 @@
-Meaning of each folder:
+# A solc json parser 
 
-- contracts: the .sol file that we want to analyze
-- solc_json_ast: the AST in json format output by solc,
-- parsed_json: parsed json file containing(ContractData, Function, Field, Modifier)
+## Requirements
+
+- Python 3.9 
+- Pip 
+- the following libraries:
+
+``` bash
+pip install py-solc-x semantic_version
+```
+
+## Usage 
+
+``` python
+from solc_json_parser import SolidityAst
+ast = SolidityAst
+ast.all_contract_names()
+```
+
 
