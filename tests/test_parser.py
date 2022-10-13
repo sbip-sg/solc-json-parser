@@ -34,7 +34,7 @@ class TestParser(unittest.TestCase):
     def test_pruned_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_pruned_contract_names = {'B', 'C'}
-        pruned_contract_names = set(ast.pruned_contract_names())
+        pruned_contract_names = set(ast.pruned_contract_names)
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
 
