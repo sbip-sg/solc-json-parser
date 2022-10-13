@@ -182,7 +182,11 @@ class SolidityAst():
         assert return_type is not None
         visibility = node.get('visibility')
         if node.get('name') is None or node.get('name') == "":
-            name = node.get("kind") # for constructor
+            name = node.get("kind") # for constructor v5, v6, v7, v8
+            if not name and node.get("isConstructor"):
+                name = "constructor" # for constructor v4
+            
+            assert name, "Constructor name is None or empty"
         else:
             name = node.get('name') # function name
 
