@@ -102,6 +102,7 @@ class SolidityAst():
     def __init__(self, contract_source_path: str, version=None):
         if '\n' in contract_source_path:
             self.source = contract_source_path
+            self.file_path = None
         else:
             self.file_path = contract_source_path
             with open(contract_source_path, 'r') as f:
