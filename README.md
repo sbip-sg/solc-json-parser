@@ -28,7 +28,16 @@ python setup.py pytest
 
 ## Install 
 
+Install for development:
+
 ``` bash
 pip install -e .
+```
+
+
+Or install from github:
+
+``` bash
+pip install https://github.com/sbip-sg/solc-json-parser/archive/main.zip
 ```
 
