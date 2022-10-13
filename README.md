@@ -4,10 +4,10 @@
 
 - Python 3.9 
 - Pip 
-- the following libraries:
+- Required libraries can be installed with
 
-``` bash
-pip install py-solc-x semantic_version
+  ``` bash
+pip install -r requirements.txt
 ```
 
 ## Usage 
