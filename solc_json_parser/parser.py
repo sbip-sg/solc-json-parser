@@ -100,9 +100,15 @@ class SolidityAst():
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
     def __init__(self, contract_source_path: str, version=None):
-        self.contract_source_path: str = contract_source_path
-        self._source_code: str    = self._get_source_code()
-        self.exact_version: str   =  version or detect_solc_version(self._source_code) or DEFAULT_SOLC_VERSION
+        if '\n' in contract_source_path:
+            self.source = contract_source_path
+            self.file_path = None
+        else:
+            self.file_path = contract_source_path
+            with open(contract_source_path, 'r') as f:
+                self.source = f.read()
+
+        self.exact_version: str   =  version or detect_solc_version(self.source) or DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
@@ -111,7 +117,7 @@ class SolidityAst():
 
     @cached_property
     def raw_version(self):
-        return version_str_from_source(self._source_code)
+        return version_str_from_source(self.source)
 
     def _get_version_key(self):
         if int(self.exact_version[2]) < 8:
@@ -309,14 +315,7 @@ class SolidityAst():
 
         _add_inherited_function_fields(data_dict)
 
-        # basename = os.path.basename(self.contract_source_path)
-        # self.save_solc_ast_json(basename)
         return data_dict
-
-    def _get_source_code(self) -> str:
-        with open(self.contract_source_path, 'r') as f:
-            source_code = f.read()
-        return source_code
 
     def _get_exact_version_from_source_code(self, source_code: str) -> Optional[str]:
         if 'pragma solidity' in source_code:
@@ -332,7 +331,7 @@ class SolidityAst():
         try:
             solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
-            return solcx.compile_source(self._source_code, output_values=['ast'], solc_version=self.exact_version)
+            return solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
         except Exception as e:
             print("Error: ", e)
             print("Please check if the version is valid")
@@ -371,6 +370,7 @@ class SolidityAst():
         pruned_contracts = [c for c in contracts if c.name not in base_contracts_name]
         return pruned_contracts
 
+    @cached_property
     def pruned_contract_names(self) -> List[str]:
         return [c.name for c in self.pruned_contracts()]
 
@@ -422,7 +422,6 @@ class SolidityAst():
         # by default, base contract's functions are included
         # different from fields, we don't check parent function visibility
         functions = contract.functions
-        base_contract = []
         if not check_base_contract:
             functions = [n for n in functions if n.inherited_from == '']
 
