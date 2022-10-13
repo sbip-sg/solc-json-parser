@@ -1,5 +1,5 @@
 import unittest
-from solc_ast_parser import SolidityAST
+from solc_json_parser import SolidityAst
 contracts_root = './contracts'
 
 class TestParser(unittest.TestCase):
@@ -12,34 +12,34 @@ class TestParser(unittest.TestCase):
 
     # add tests
     def test_get_version(self):
-        ast = SolidityAST(f'{contracts_root}/buy051.sol')
-        self.assertEqual('0.5.1', ast.get_version(), 'Version should be 0.5.1')
+        ast = SolidityAst(f'{contracts_root}/buy051.sol')
+        self.assertEqual('0.5.1', ast.exact_version, 'Version should be 0.5.1')
 
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
-        self.assertEqual('>=0.7.2', ast.get_version(), 'Version should be 0.7.2')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
+        self.assertEqual('0.7.2', ast.exact_version, 'Version should be 0.7.2')
 
     def test_all_contract_name(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_contract_names = {'A', 'B', 'C'}
         all_contract_names = set(ast.all_contract_names())
         self.assertEqual(expected_contract_names, all_contract_names, 'Contracts should be identified correctly')
         
         
     def test_base_contract_names(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_base_contract_names = {'A'}
         base_contract_names = set(ast.base_contract_names())
         self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
         
     def test_pruned_contract_names(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_pruned_contract_names = {'B', 'C'}
         pruned_contract_names = set(ast.pruned_contract_names())
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
 
     def test_fields_name_only_in_contract(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         contract_a = ast.contract_by_name('A')
         fields_name_a = set(ast.fields_in_contract(contract_a, name_only=True))
         expected_fields_name_a = {'offering', 'threshold', 'level', 'balancesA', 'step', 'private_var'}
@@ -60,7 +60,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_fields_name_c, fields_name_c, 'Fields_c with base should be identified correctly')
 
     def test_fields_in_contract_by_name(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
 
         # fields_a all
         fields_name_a = set(ast.fields_in_contract_by_name('A', name_only=True, field_visibility=self.FIELD_VISIBILITY_ALL))
@@ -83,7 +83,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_fields_name_c, fields_name_c, 'Fields_c without base should be identified correctly')
 
     def test_functions_in_contract_by_name_with_name_only(self):
-        ast = SolidityAST(f'{contracts_root}/inheritance_contracts.sol')
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
 
         functions_a = set(ast.functions_in_contract_by_name('A', name_only=True))
         expected_functions_a = {'absfunc', 'emptyfunc', 'receive'}
@@ -103,8 +103,20 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_functions_c, functions_c, 'Functions_c should be identified correctly')
 
 
-    def test_abstract_function_in_contract_by_name(self):
-        pass
+    def test_optional_version_input(self):
+        ast_with_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version='0.7.4')
+        ast_without_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version=None)
+        self.assertEqual('0.7.4', ast_with_version.exact_version, 'AST should be the same with and without version input')
+        self.assertEqual('0.7.2', ast_without_version.exact_version, 'AST should be the same with and without version input')
+
+    def test_get_plain_version_from_source(self):
+        path = f'{contracts_root}/inheritance_contracts.sol'
+        t_cases = [('whole.sol', '^0.8.0'), ('buy051.sol', '0.5.1')]
+
+        for (c, ver) in t_cases:
+            path = f'{contracts_root}/{c}'
+            ast = SolidityAst(path)
+            self.assertEqual(ver, ast.raw_version)
 
 if __name__ == '__main__':
     unittest.main()

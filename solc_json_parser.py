@@ -1,19 +1,94 @@
-import argparse
 import copy
 
+from semantic_version import Version
+import semantic_version
+import logging
 import addict
 import solcx
 import json
 import os
+import re
 from typing import Dict, Optional, List, Any, Tuple
 from functools import cached_property, cache
-from fields import Field, Function, ContractData, Modifier
-from version_cfg import v_keys
+try:
+    from fields import Field, Function, ContractData, Modifier
+    from version_cfg import v_keys
+except:
+    from utils.fields import Field, Function, ContractData, Modifier
+    from utils.version_cfg import v_keys
 
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
+DEFAULT_SOLC_VERSION = '0.7.0'
+INSTALLABLE_VERSION = []
 
-class SolidityAST():
+def get_candidates():
+    '''
+    Returns a cached list of solc versions available for install
+    '''
+    global INSTALLABLE_VERSION
+    if INSTALLABLE_VERSION:
+        return INSTALLABLE_VERSION
+    else:
+        INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
+        return INSTALLABLE_VERSION
+
+def select_available_version(version_str: str, install=False) -> Optional[str]:
+    '''Switch to current or the next semantic version available to use. Returns the version selected.'''
+    version = Version(version_str)
+    candidates = get_candidates()
+    try:
+        chosen = next(v for v in candidates if v >= version)
+    except StopIteration:
+        logging.error(f'No candidate version available for {version}')
+        return None
+    ver = str(chosen)
+
+    if ver and install:
+        solc_bin = f'{solcx.get_solcx_install_folder()}/solc-v{ver}'
+        if not os.path.exists(solc_bin):
+            solcx.install_solc(chosen)
+
+    return ver
+
+def version_str_from_line(line) -> Optional[str]:
+    '''
+    Extract solc version string from input line
+    '''
+    if line.strip().startswith('pragma') and 'solidity' in line:
+        ver = line.strip().split(maxsplit=2)[-1].split(';', maxsplit=1)[0]
+        ver = re.sub(r'([\^>=<~]+)\s+', r'\1', ver)
+        return re.sub(r'(\.0+)', '.0', ver)
+    return None
+
+def version_str_from_source(source_or_source_file: str) -> Optional[str]:
+    inputs = source_or_source_file.split('\n') if '\n' in source_or_source_file else open(source_or_source_file, 'r')
+
+    # Get version part from `pragma solidity ***;` lines
+    versions = [version_str_from_line(line) for line in inputs if line.strip().startswith('pragma') and 'solidity' in line]
+
+    if not versions:
+        logging.warning('No pragma directive found in source code')
+        return None
+
+    return ' '.join(set(versions))
+
+def detect_solc_version(source_or_source_file: str) -> Optional[str]:
+    '''
+    Detect solc version from a flatten source. Input can be a single file or source code string
+    '''
+    merged_version = version_str_from_source(source_or_source_file)
+
+    spec = semantic_version.NpmSpec(merged_version)
+    candidates = get_candidates()
+
+    # if we want the best candidate, this normally means higher version
+    # ver = spec.select(candidates)
+
+    # if we want the lowest version, will throw if no version matches
+    return str(next(spec.filter(candidates)))
+
+class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
     FIELD_VISIBILITY_NON_PRIVATE = frozenset(('default', 'internal', 'public'))
@@ -21,19 +96,19 @@ class SolidityAST():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str):
+    def __init__(self, contract_source_path: str, version=None):
         self.contract_source_path: str = contract_source_path
         self._source_code: str    = self._get_source_code()
-        self.exact_version: str   = self._get_exact_version_from_source_code(self._source_code)
-        self.version:str          = self._get_version_from_source_code(self._source_code)
+        self.exact_version: str   =  version or detect_solc_version(self._source_code) or DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
-
-        # self.save_solc_ast_json(os.path.basename(self.contract_source_path))
-
         self.exported_symbols = None # to be determined in _parse()
         self.contracts_dict: Dict = self._parse()
+
+    @cached_property
+    def raw_version(self):
+        return version_str_from_source(self._source_code)
 
     def _get_version_key(self):
         if int(self.exact_version[2]) < 8:
@@ -236,18 +311,25 @@ class SolidityAST():
             source_code = f.read()
         return source_code
 
-    def _get_exact_version_from_source_code(self, source_code: str):
-        return source_code.split("pragma solidity")[1].split(";")[0].strip()\
-                .replace('^', '').replace('=', '').replace('>', '').replace('<', '')
+    def _get_exact_version_from_source_code(self, source_code: str) -> Optional[str]:
+        if 'pragma solidity' in source_code:
+            return source_code.split("pragma solidity")[1]\
+                              .split(";")[0].strip()\
+                                            .replace('^', '').replace('=', '').replace('>', '').replace('<', '')
+        else:
+            return None
 
-    def _get_version_from_source_code(self, source_code: str):
-        return source_code.split("pragma solidity")[1].split(";")[0].strip()
 
     def compile_sol_to_json_ast(self) -> dict:
-        print("downloading compiler, version: ", self.exact_version)
-        solcx.install_solc(self.exact_version)
-        solcx.set_solc_version(self.exact_version)
-        return solcx.compile_source(self._source_code, output_values=['ast'], solc_version=self.exact_version)
+        # print("downloading compiler, version: ", self.exact_version)
+        try:
+            solcx.install_solc(self.exact_version)
+            solcx.set_solc_version(self.exact_version)
+            return solcx.compile_source(self._source_code, output_values=['ast'], solc_version=self.exact_version)
+        except Exception as e:
+            print("Error: ", e)
+            print("Please check if the version is valid")
+            exit(0) 
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
@@ -267,10 +349,6 @@ class SolidityAST():
 
     def all_abstract_contracts(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.abstract]
-
-    def get_version(self) -> str:
-        return self.version
-
 
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
@@ -376,18 +454,33 @@ class SolidityAST():
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
 
-
-    def get_all_literals(self) -> List[str]:
-        pass # TODO
-
-    def get_all_addresses(self) -> List[str]:
-        pass # TODO
-
     def get_fallback_functions(self, contract_name: str) -> List[str]:
         return self.functions_in_contract_by_name(contract_name, name_only=True)
 
+
 if __name__ == '__main__':
-    ast = SolidityAST(f'./contracts/inheritance_contracts.sol')
-    ast.save_parsed_info_json('inheritance_contracts')
-    # self.assertEqual('0.7.2', ast.get_version(), 'Version should be 0.7.2')
-    print(ast.get_version())
+    import argparse
+    import glob
+    import traceback
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input', type=str, help="Input file", required=False)
+    parser.add_argument('-v', '--verbose', help="Verbose", action='store_true', default=False)
+    args = parser.parse_args()
+
+    failed = []
+    for c in [args.input] if args.input else glob.glob('contracts/*.sol'):
+        try:
+            ast = SolidityAst(c)
+        except:
+            print(f'Testing {c} error')
+            failed.append(c)
+            if args.verbose:
+                traceback.print_exc()
+            
+
+    if not failed:
+        print('All contracts parsed success!')
+    else:
+        print(f'{len(failed)} contracts failed:')
+        print(failed)

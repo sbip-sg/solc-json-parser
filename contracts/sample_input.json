@@ -1,0 +1,10 @@
+[
+  {
+    "function": "deposit",
+    "input": [100]
+  },
+  {
+    "function": "withdrawAll",
+    "input": []
+  }
+]

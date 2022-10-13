@@ -1,0 +1,10 @@
+{
+  "seed": {
+    "int": [1, 32768],
+    "string": ["test string", "test string 2"],
+    "bytes": ["abcd", "ijlkmn"]
+  },
+  "constructor_args": {
+    "Test": [0, 0]
+  }
+}
