@@ -6,7 +6,7 @@
 - Pip 
 - Required libraries can be installed with
 
-  ``` bash
+```bash
 pip install -r requirements.txt
 ```
 
@@ -18,4 +18,9 @@ ast = SolidityAst
 ast.all_contract_names()
 ```
 
+## Test
+
+``` bash
+python -m unittest -v
+```
 
