@@ -14,8 +14,8 @@ try:
     from fields import Field, Function, ContractData, Modifier
     from version_cfg import v_keys
 except:
-    from utils.fields import Field, Function, ContractData, Modifier
-    from utils.version_cfg import v_keys
+    from solc_json_parser.fields import Field, Function, ContractData, Modifier
+    from solc_json_parser.version_cfg import v_keys
 
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
