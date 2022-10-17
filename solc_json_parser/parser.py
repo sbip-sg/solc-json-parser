@@ -191,8 +191,10 @@ class SolidityAst():
             name = node.get("kind") # for constructor v5, v6, v7, v8
             if not name and node.get("isConstructor"):
                 name = "constructor" # for constructor v4
-            
-            assert name, "Constructor name is None or empty"
+
+            # anonymous fallback function
+            name = ''
+            # assert name, "Constructor name is None or empty"
         else:
             name = node.get('name') # function name
 
@@ -459,9 +461,6 @@ class SolidityAst():
         contract = self.contract_by_name(contract_name)
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
-
-    def get_fallback_functions(self, contract_name: str) -> List[str]:
-        return self.functions_in_contract_by_name(contract_name, name_only=True)
 
 
 if __name__ == '__main__':
