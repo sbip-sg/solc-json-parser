@@ -193,7 +193,7 @@ class SolidityAst():
                 name = "constructor" # for constructor v4
 
             # anonymous fallback function
-            name = ''
+            name = name or ''
             # assert name, "Constructor name is None or empty"
         else:
             name = node.get('name') # function name
