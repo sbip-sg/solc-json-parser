@@ -5,6 +5,7 @@ class Field:
     inherited_from:   str
     visibility: str
     name:       str
+    line_num:   tuple # (start, end)
 
 
 @dataclass
@@ -16,6 +17,7 @@ class Function:
     return_signature: str
     name:        str
     modifiers:   list
+    line_num:    tuple # (start, end)
 
 
 @dataclass
@@ -27,7 +29,7 @@ class ContractData:
     fields:         list
     functions:      list
     modifiers:      list
-    
+    line_num:       tuple # (start, end)
 
 @dataclass
 class Modifier:

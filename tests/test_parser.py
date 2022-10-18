@@ -127,6 +127,121 @@ class TestParser(unittest.TestCase):
             except Exception as e:
                 print(f'Parsing {c} failed with {e}')
             
+    def test_line_number_range_v7(self):
+        ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
+        
+        # test contract A
+        contract_a = ast.contract_by_name('A')
+        expected_range_a = (6, 27)
+        self.assertEqual(expected_range_a, contract_a.line_num, 'Contract A should have correct line number range')
+        
+        # test contract B
+        contract_b = ast.contract_by_name('B')
+        expected_range_b = (29, 42)
+        self.assertEqual(expected_range_b, contract_b.line_num, 'Contract B should have correct line number range')
+        
+        # B.constructor function
+        expected_function_range = (34, 36)
+        function_range = ast.function_by_name('B', 'constructor').line_num
+        self.assertEqual(expected_function_range, function_range)
+        
+        # B.touch function
+        expected_function_range = (38, 41)
+        function_range = ast.function_by_name('B', 'touch').line_num
+        self.assertEqual(expected_function_range, function_range)
+        
+        # B.owner; B.val; B.call; Fields
+        fields = ast.fields_in_contract_by_name('B')
+        
+        expected_field_range = (30, 30)
+        field_range = fields[0].line_num
+        self.assertEqual(expected_field_range, field_range)
+        
+        expected_field_range = (31, 31)
+        field_range = fields[1].line_num
+        self.assertEqual(expected_field_range, field_range)
+        
+        expected_field_range = (32, 32)
+        field_range = fields[2].line_num
+        self.assertEqual(expected_field_range, field_range)
+        
+        
+        # test contract C
+        contract_c = ast.contract_by_name('C')
+        expected_range_c = (44, 136)
+        self.assertEqual(expected_range_c, contract_c.line_num, 'Contract C should have correct line number range')
+        
+        # C.cmasking function
+        expected_function_range = (60, 85)
+        function_range = ast.function_by_name('C', 'cmasking').line_num
+        self.assertEqual(expected_function_range, function_range)
+        
+        # C.sweep function
+        expected_function_range = (87, 100)
+        function_range = ast.function_by_name('C', 'sweep').line_num
+        self.assertEqual(expected_function_range, function_range)
+        
+    def test_line_number_range_v8(self):
+        ast = SolidityAst(f'{contracts_root}/whole.sol')
+        contract = ast.contract_by_name('BEPContext')
+        expected_range = (20, 33)
+        self.assertEqual(expected_range, contract.line_num, 'Contract BEPContext should have correct line number range')
+
+        contract = ast.contract_by_name('BEPOwnable')
+        expected_range = (48, 112)
+        self.assertEqual(expected_range, contract.line_num, 'Contract BEPOwnable should have correct line number range')
+
+        contract = ast.contract_by_name('Address')
+        expected_range = (241, 454)
+        self.assertEqual(expected_range, contract.line_num, 'Contract Address should have correct line number range')
+
+        expected_function_range = (178, 198)
+        function_range = ast.function_by_name('Strings', 'toString').line_num
+        self.assertEqual(expected_function_range, function_range)
+
+        expected_function_range = (346, 352)
+        function_range = ast.function_by_name('Address', 'functionCallWithValue').line_num
+        self.assertEqual(expected_function_range, function_range)
+
+        expected_function_range = (1146, 1167)
+        function_range = ast.function_by_name('ERC721', '_checkOnERC721Received').line_num
+        self.assertEqual(expected_function_range, function_range)
+
+        fields = ast.fields_in_contract_by_name('ERC721Enumerable')
+        expected_field_range = (1225, 1225)
+        field_range = fields[0].line_num
+        self.assertEqual(expected_field_range, field_range)
+
+        expected_field_range = (1228, 1228)
+        field_range = fields[1].line_num
+        self.assertEqual(expected_field_range, field_range)
+
+        expected_field_range = (1234, 1234)
+        field_range = fields[3].line_num
+        self.assertEqual(expected_field_range, field_range)
+
+    def test_line_number_range_v4(self):
+        ast = SolidityAst(f'{contracts_root}/reentrancy_dao.sol')
+        contract = ast.contract_by_name('ReentrancyDAO')
+        expected_range = (3, 21)
+        self.assertEqual(expected_range, contract.line_num, 'ReentrancyDAO BEPContext should have correct line number range')
+
+        expected_function_range = (7, 15)
+        function_range = ast.function_by_name('ReentrancyDAO', 'withdrawAll').line_num
+        self.assertEqual(expected_function_range, function_range)
+
+        expected_function_range = (17, 20)
+        function_range = ast.function_by_name('ReentrancyDAO', 'deposit').line_num
+        self.assertEqual(expected_function_range, function_range)
+
+        fields = ast.fields_in_contract_by_name('ReentrancyDAO')
+        expected_field_range = (4, 4)
+        field_range = fields[0].line_num
+        self.assertEqual(expected_field_range, field_range)
+
+        expected_field_range = (5, 5)
+        field_range = fields[1].line_num
+        self.assertEqual(expected_field_range, field_range)
 
 if __name__ == '__main__':
     unittest.main()

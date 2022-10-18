@@ -91,6 +91,12 @@ def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     # if we want the lowest version, will throw if no version matches
     return str(next(spec.filter(candidates)))
 
+
+def get_line_number_range(start_index:int, offset:int, source_code:str):
+    start_line = source_code[:start_index].count('\n') + 1
+    end_line   = start_line + source_code[start_index:start_index + offset].count('\n')
+    return start_line, end_line
+
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
@@ -158,6 +164,10 @@ class SolidityAst():
                         modifiers.append(child['children'][0]['attributes']['value'])
             return modifiers
 
+        # line number range is the same for all versions 
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+
         if self.version_key == "v8":
             parameters = node.get('parameters')
             return_type = node.get('returnParameters')
@@ -197,9 +207,13 @@ class SolidityAst():
         signature = _get_signature(name, parameters)
         return_signature = _get_signature("", return_type)
         return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility,
-                        signature=signature, name=name, return_signature=return_signature, modifiers=modifiers)
+                        signature=signature, name=name, return_signature=return_signature, modifiers=modifiers, line_num=line_number_range)
 
     def _process_field(self, node: Dict) -> Field:
+        # line number range is the same for all versions 
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+
         if self.version_key == "v8":
             pass
         else:  # v4, v5, v6, v7
@@ -207,7 +221,7 @@ class SolidityAst():
         visibility = node.get('visibility')
         name = node.get('name')
         inherited_from = ""
-        return Field(inherited_from=inherited_from, visibility=visibility, name=name)
+        return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range)
 
     def _process_modifier(self, node: Dict) -> Modifier:
         if self.version_key == "v8":
@@ -219,6 +233,10 @@ class SolidityAst():
         return Modifier(visibility=visibility, name=name)
 
     def _get_contract_meta_data(self, node: Dict) -> tuple:
+        # line number range is the same for all versions 
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+
         if self.version_key == "v8":
             pass  # do nothing
         else:  # v4, v5, v6, v7
@@ -242,11 +260,12 @@ class SolidityAst():
             base_contracts = [id_to_contract_name[contract_id] for contract_id in contract_dependencies]
         contract_name = node.get('name')
 
-        return contract_kind, is_abstract, contract_name, base_contracts
+        return contract_kind, is_abstract, contract_name, base_contracts, line_number_range
 
     def _process_contract(self, node: Dict) -> ContractData:
         contract_meta_data = self._get_contract_meta_data(node)
-        contract_kind, is_abstract, contract_name, base_contracts = contract_meta_data
+        contract_kind, is_abstract, contract_name, base_contracts, line_number_range = contract_meta_data
+
 
         functions = []
         fields = []
@@ -264,7 +283,7 @@ class SolidityAst():
                 # not implemented for other types
                 pass
 
-        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers)
+        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range)
 
     def set_exported_symbols(self, ast):
         if self.version_key == "v8":
