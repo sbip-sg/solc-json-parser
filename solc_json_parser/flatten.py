@@ -1,16 +1,8 @@
-from ctypes import DEFAULT_MODE
-from typing import Any, Union, List, Tuple, Optional, Dict, Set
-import solcx
-from semantic_version import Version
-import semantic_version
-import re
+from typing import List, Tuple, Optional, Set
 import os
 from pathlib import Path
 from os.path import abspath
-import rlp
-from eth_utils import keccak, to_checksum_address, to_bytes, to_wei
-from solcx.exceptions import SolcNotInstalled
-from functools import cached_property, cache
+from functools import cached_property
 
 
 # Duplicate pragma to be dropped

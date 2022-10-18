@@ -8,16 +8,17 @@ import solcx
 import json
 import os
 import re
-from typing import Dict, Optional, List, Any, Tuple
-from functools import cached_property, cache
-import consts
+from typing import Dict, Optional, List, Any
+from functools import cached_property
 
 try:
     from fields import Field, Function, ContractData, Modifier
     from version_cfg import v_keys
+    import consts
 except:
     from solc_json_parser.fields import Field, Function, ContractData, Modifier
     from solc_json_parser.version_cfg import v_keys
+    import solc_json_parser.consts
 
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
