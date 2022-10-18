@@ -12,10 +12,29 @@ pip install -r requirements.txt
 
 ## Usage 
 
+Parsing AST with solidity source code and get contract information:
+
 ``` python
 from solc_json_parser.parser import SolidityAst
-ast = SolidityAst
+
+# The input can be a file path or source code
+ast = SolidityAst('contracts/BlackScholesEstimate_8.sol')
 ast.all_contract_names()
+```
+
+Flatten source code:
+
+``` bash
+from solc_json_parser.flatten import FlattenSolidity
+
+# Pass the main contract to be flattened
+fl = FlattenSolidity('contracts/complex/01_13_FunPassAlpha.sol')
+
+# Get the flattened source code
+fl.flatten_source
+
+# Reverse look up the location from the line number in the flattend source code
+fl.reverse_line_lookup(223)
 ```
 
 ## Test

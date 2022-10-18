@@ -10,6 +10,8 @@ import os
 import re
 from typing import Dict, Optional, List, Any, Tuple
 from functools import cached_property, cache
+import consts
+
 try:
     from fields import Field, Function, ContractData, Modifier
     from version_cfg import v_keys
@@ -19,7 +21,7 @@ except:
 
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
-DEFAULT_SOLC_VERSION = '0.7.0'
+
 INSTALLABLE_VERSION = []
 
 def get_candidates():
@@ -114,7 +116,7 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
-        self.exact_version: str   =  version or detect_solc_version(self.source) or DEFAULT_SOLC_VERSION
+        self.exact_version: str   =  version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
