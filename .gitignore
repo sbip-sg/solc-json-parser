@@ -14,3 +14,4 @@ ref.py
 __pycache__/*
 /.eggs/
 /solc_json_parser.egg-info/
+/node_modules/
