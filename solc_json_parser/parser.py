@@ -172,7 +172,7 @@ class SolidityAst():
 
         # line number range is the same for all versions 
         line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
 
         if self.version_key == "v8":
             parameters = node.get('parameters')
@@ -220,7 +220,7 @@ class SolidityAst():
     def _process_field(self, node: Dict) -> Field:
         # line number range is the same for all versions 
         line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
 
         if self.version_key == "v8":
             pass
@@ -243,7 +243,7 @@ class SolidityAst():
     def _get_contract_meta_data(self, node: Dict) -> tuple:
         # line number range is the same for all versions 
         line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self._source_code)
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
 
         if self.version_key == "v8":
             pass  # do nothing
