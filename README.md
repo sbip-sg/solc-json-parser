@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ## Usage 
 
 ``` python
-from solc_json_parser import SolidityAst
+from solc_json_parser.parser import SolidityAst
 ast = SolidityAst
 ast.all_contract_names()
 ```
@@ -22,5 +22,22 @@ ast.all_contract_names()
 
 ``` bash
 python -m unittest -v
+# or
+python setup.py pytest
+```
+
+## Install 
+
+Install for development:
+
+``` bash
+pip install -e .
+```
+
+
+Or install from github:
+
+``` bash
+pip install https://github.com/sbip-sg/solc-json-parser/archive/main.zip
 ```
 

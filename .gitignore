@@ -12,3 +12,5 @@ parsed_json/*.json
 .idea
 ref.py
 __pycache__/*
+/.eggs/
+/solc_json_parser.egg-info/

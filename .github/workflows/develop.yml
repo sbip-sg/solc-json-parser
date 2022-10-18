@@ -21,8 +21,8 @@ jobs:
         python-version: '3.9.0'
         cache: 'pip'
 
-    - run: pip install -r requirements.txt
     - name: Test
-      run: python -m unittest -v
+      run: python setup.py pytest
+
         
 
