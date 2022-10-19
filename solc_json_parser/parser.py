@@ -176,6 +176,8 @@ class SolidityAst():
         # line number range is the same for all versions 
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        start, offset = line_number_range
+        raw = self.source[start: start+offset]
 
         if self.version_key == "v8":
             parameters = node.get('parameters')
@@ -217,7 +219,7 @@ class SolidityAst():
 
         signature = _get_signature(name, parameters)
         return_signature = _get_signature("", return_type)
-        return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility,
+        return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
                         signature=signature, name=name, return_signature=return_signature, modifiers=modifiers, line_num=line_number_range)
 
     def _process_field(self, node: Dict) -> Field:
@@ -351,15 +353,10 @@ class SolidityAst():
 
 
     def compile_sol_to_json_ast(self) -> dict:
-        # print("downloading compiler, version: ", self.exact_version)
-        try:
-            solcx.install_solc(self.exact_version)
-            solcx.set_solc_version(self.exact_version)
-            return solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
-        except Exception as e:
-            print("Error: ", e)
-            print("Please check if the version is valid")
-            exit(0) 
+        solcx.install_solc(self.exact_version)
+        solcx.set_solc_version(self.exact_version)
+        return solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
+
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
@@ -380,6 +377,7 @@ class SolidityAst():
     def all_abstract_contracts(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.abstract]
 
+    @cached_property
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
         base_contracts_name = []
@@ -390,7 +388,7 @@ class SolidityAst():
 
     def pruned_contracts(self) -> List[ContractData]:
         contracts = self.all_contracts()
-        base_contracts_name = self.base_contract_names()
+        base_contracts_name = self.base_contract_names
         pruned_contracts = [c for c in contracts if c.name not in base_contracts_name]
         return pruned_contracts
 
