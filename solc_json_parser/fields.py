@@ -10,6 +10,7 @@ class Field:
 
 @dataclass
 class Function:
+    raw: str
     inherited_from:   str
     abstract:    bool
     visibility:  str

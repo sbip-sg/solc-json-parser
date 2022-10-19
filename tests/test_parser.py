@@ -28,7 +28,7 @@ class TestParser(unittest.TestCase):
     def test_base_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_base_contract_names = {'A'}
-        base_contract_names = set(ast.base_contract_names())
+        base_contract_names = set(ast.base_contract_names)
         self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
         
     def test_pruned_contract_names(self):
