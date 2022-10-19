@@ -439,7 +439,7 @@ class SolidityAst():
     def functions_in_contract(self, contract: ContractData,
                               name_only: bool = False,
                               function_visibility: Optional[frozenset] = None,
-                              check_base_contract=False) -> List[Function]:
+                              check_base_contract=True) -> List[Function]:
 
         # by default, base contract's functions are included
         # different from fields, we don't check parent function visibility
@@ -457,7 +457,7 @@ class SolidityAst():
     def functions_in_contract_by_name(self, contract_name: str,
                                       name_only: bool = False,
                                       function_visibility: Optional[frozenset] = None,
-                                      check_base_contract=False) -> List[Any]:
+                                      check_base_contract=True) -> List[Any]:
         # fns = self.contract_by_name(contract_name).functions
         # if check_base_contract:
         #     pass # do nothing
