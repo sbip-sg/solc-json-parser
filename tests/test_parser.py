@@ -37,6 +37,10 @@ class TestParser(unittest.TestCase):
         pruned_contract_names = set(ast.pruned_contract_names)
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
+        ast = SolidityAst(f'{contracts_root}/whole.sol')
+        expected_pruned_contract_names = {'BeeArmyRankNFT', 'IERC721Receiver'}
+        pruned_contract_names = set(ast.pruned_contract_names)
+        self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
     def test_fields_name_only_in_contract(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
@@ -242,6 +246,16 @@ class TestParser(unittest.TestCase):
         expected_field_range = (5, 5)
         field_range = fields[1].line_num
         self.assertEqual(expected_field_range, field_range)
+
+    def test_multi_src_file_v8(self):
+        ast = SolidityAst(f'{contracts_root}/dev/dev.sol')
+        # todo more test
+        
+    def test_all_library(self):
+        ast = SolidityAst(f'{contracts_root}/whole.sol')
+        lib_name = ast.all_libraries_names()
+        expected_lib_name = ["Strings", "Address"]
+        self.assertEqual(expected_lib_name, lib_name, 'Should have correct library names')
 
 if __name__ == '__main__':
     unittest.main()

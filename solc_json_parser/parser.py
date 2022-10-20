@@ -317,28 +317,32 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
+        # self.save_solc_ast_json("dev")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
-        ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
-        self.set_exported_symbols(ast)
+        # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
         data_dict = {}
-
         # use version key to get the correct version cfg
         keys = self.keys
-
-        if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
-            raise Exception("Invalid AST")
-
-        for i, node in enumerate(ast[keys.children]):
-            if node[keys.name] == "PragmaDirective":
+        unique_file = set()
+        for ast_key in self.solc_json_ast.keys():
+            if ast_key.split(':')[0] in unique_file:
                 continue
-            elif node[keys.name] == "ContractDefinition":
-                contract = self._process_contract(node)
-                data_dict[contract.name] = contract
-                # print(contract.name)
 
+            unique_file.add(ast_key.split(':')[0])
+            ast = self.solc_json_ast.get(ast_key).get('ast')
+            self.set_exported_symbols(ast)
+            if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
+                raise Exception("Invalid AST")
+
+            for i, node in enumerate(ast[keys.children]):
+                if node[keys.name] == "PragmaDirective":
+                    continue
+                elif node[keys.name] == "ContractDefinition":
+                    contract = self._process_contract(node)
+                    data_dict[contract.name] = contract
+                    # print(contract.name)
         _add_inherited_function_fields(data_dict)
-
         return data_dict
 
     def _get_exact_version_from_source_code(self, source_code: str) -> Optional[str]:
@@ -355,7 +359,12 @@ class SolidityAst():
         try:
             solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
-            return solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
+            current_working_dir = os.getcwd()
+            file_dir = os.path.dirname(self.file_path)
+            os.chdir(file_dir)
+            ast = solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
+            os.chdir(current_working_dir)
+            return ast
         except Exception as e:
             print("Error: ", e)
             print("Please check if the version is valid")
@@ -380,6 +389,9 @@ class SolidityAst():
     def all_abstract_contracts(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.abstract]
 
+    def all_abstract_contract_names(self) -> List[str]:
+        return [contract.name for contract in self.all_abstract_contracts()]
+
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
         base_contracts_name = []
@@ -391,7 +403,7 @@ class SolidityAst():
     def pruned_contracts(self) -> List[ContractData]:
         contracts = self.all_contracts()
         base_contracts_name = self.base_contract_names()
-        pruned_contracts = [c for c in contracts if c.name not in base_contracts_name]
+        pruned_contracts = [c for c in contracts if c.name not in base_contracts_name and c.kind != "library"]
         return pruned_contracts
 
     @cached_property
@@ -483,6 +495,12 @@ class SolidityAst():
         contract = self.contract_by_name(contract_name)
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
+    
+    def all_libraries(self) -> List[ContractData]:
+        return [contract for contract in self.all_contracts() if contract.kind == "library"]
+    
+    def all_libraries_names(self) -> List[str]:
+        return [lib.name for lib in self.all_libraries()]
 
 
 if __name__ == '__main__':
