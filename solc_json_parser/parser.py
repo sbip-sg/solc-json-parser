@@ -176,6 +176,8 @@ class SolidityAst():
         # line number range is the same for all versions 
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        start, offset = line_number_range
+        raw = self.source[start: start+offset]
 
         if self.version_key == "v8":
             parameters = node.get('parameters')
@@ -217,7 +219,7 @@ class SolidityAst():
 
         signature = _get_signature(name, parameters)
         return_signature = _get_signature("", return_type)
-        return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility,
+        return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
                         signature=signature, name=name, return_signature=return_signature, modifiers=modifiers, line_num=line_number_range)
 
     def _process_field(self, node: Dict) -> Field:
@@ -453,7 +455,7 @@ class SolidityAst():
     def functions_in_contract(self, contract: ContractData,
                               name_only: bool = False,
                               function_visibility: Optional[frozenset] = None,
-                              check_base_contract=False) -> List[Function]:
+                              check_base_contract=True) -> List[Function]:
 
         # by default, base contract's functions are included
         # different from fields, we don't check parent function visibility
@@ -471,7 +473,7 @@ class SolidityAst():
     def functions_in_contract_by_name(self, contract_name: str,
                                       name_only: bool = False,
                                       function_visibility: Optional[frozenset] = None,
-                                      check_base_contract=False) -> List[Any]:
+                                      check_base_contract=True) -> List[Any]:
         # fns = self.contract_by_name(contract_name).functions
         # if check_base_contract:
         #     pass # do nothing
