@@ -358,19 +358,18 @@ class SolidityAst():
 
     def compile_sol_to_json_ast(self) -> dict:
         # print("downloading compiler, version: ", self.exact_version)
+        current_working_dir = os.getcwd()
         try:
             solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
-            current_working_dir = os.getcwd()
             file_dir = os.path.dirname(self.file_path)
             os.chdir(file_dir)
             ast = solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
-            os.chdir(current_working_dir)
             return ast
         except Exception as e:
-            print("Error: ", e)
-            print("Please check if the version is valid")
-            exit(0) 
+            raise Exception(f"Error: {e}, Please check if the version is valid")
+        finally:
+            os.chdir(current_working_dir)
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
@@ -516,9 +515,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     failed = []
-    for c in [args.input] if args.input else glob.glob('contracts/*.sol'):
+    for c in [args.input] if args.input else glob.glob('./**/*.sol', recursive=True):
         try:
+            print(f'{c} {os.path.exists(c)} {type(c)} {len(c)}')
             ast = SolidityAst(c)
+            print(f'{c}: {ast.all_contract_names()}')
         except:
             print(f'Testing {c} error')
             failed.append(c)
