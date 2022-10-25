@@ -494,7 +494,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     failed = []
-    for c in [args.input] if args.input else glob.glob('contracts/*.sol'):
+    for c in [args.input] if args.input else glob.glob('contracts/**/*.sol', recursive=True):
         try:
             ast = SolidityAst(c)
         except:
