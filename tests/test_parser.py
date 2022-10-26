@@ -21,14 +21,14 @@ class TestParser(unittest.TestCase):
     def test_all_contract_name(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_contract_names = {'A', 'B', 'C'}
-        all_contract_names = set(ast.all_contract_names())
+        all_contract_names = set(ast.all_contract_names)
         self.assertEqual(expected_contract_names, all_contract_names, 'Contracts should be identified correctly')
         
         
     def test_base_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_base_contract_names = {'A'}
-        base_contract_names = set(ast.base_contract_names())
+        base_contract_names = set(ast.base_contract_names)
         self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
         
     def test_pruned_contract_names(self):
@@ -38,7 +38,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
         ast = SolidityAst(f'{contracts_root}/whole.sol')
-        expected_pruned_contract_names = {'BeeArmyRankNFT', 'IERC721Receiver'}
+        expected_pruned_contract_names = {'BeeArmyRankNFT'}
         pruned_contract_names = set(ast.pruned_contract_names)
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
 
@@ -253,7 +253,7 @@ class TestParser(unittest.TestCase):
         
     def test_all_library(self):
         ast = SolidityAst(f'{contracts_root}/whole.sol')
-        lib_name = ast.all_libraries_names()
+        lib_name = ast.all_libraries_names
         expected_lib_name = ["Strings", "Address"]
         self.assertEqual(expected_lib_name, lib_name, 'Should have correct library names')
 
