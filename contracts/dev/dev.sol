@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import {BEPContext, BEPOwnable} from "./whole.sol";
 import {Strings, Address} from "./whole2.sol";
+import * as Parent from "./parent.sol";
 
 
 abstract contract BEPOwnableAgain is BEPContext {
@@ -70,11 +71,9 @@ abstract contract BEPOwnableAgain is BEPContext {
     }
 }
 
-contract Test {
-    mapping (address => uint) credit;
-    uint balance;
-    address admin;    
-    
+contract Test is Parent.BugC {
+    address admin;
+
     function test2(address a) internal returns (bool){
         require(a!=address(0));
         return true;
@@ -99,4 +98,6 @@ contract Test {
         credit[msg.sender] += msg.value;
         balance += msg.value;
     }
+
+
 }
