@@ -1,5 +1,4 @@
 import copy
-# import pickle
 from semantic_version import Version
 import semantic_version
 import logging
@@ -126,15 +125,10 @@ def get_line_number_range(start_index:int, offset:int, source_code:str):
     return start_line, end_line
 
 def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
-    # with open('ast.data', 'wb') as f:
-    #     pickle.dump(ast, f)
     syms = [c['ast']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
 def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
-    # import pickle
-    # with open('ast_v7.data', 'wb') as f:
-    #     pickle.dump(ast, f)
     syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
@@ -337,12 +331,6 @@ class SolidityAst():
 
         return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id)
 
-    def update_exported_symbols(self, ast):
-        if self.version_key == "v8":
-            pass
-        else:  # v4, v5, v6, v7
-            self.exported_symbols.update(get_in(ast, "attributes", "exportedSymbols") or {})
-
     def _parse(self) -> Dict:
         def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
             for contract_id, contract in data_dict.items():
@@ -381,7 +369,6 @@ class SolidityAst():
 
             unique_file.add(ast_key.split(':')[0])
             ast = self.solc_json_ast.get(ast_key).get('ast')
-            # self.update_exported_symbols(ast)
             if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
                 raise Exception("Invalid AST")
 
@@ -447,9 +434,8 @@ class SolidityAst():
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
         base_contract_ids = set([bc for c in contracts for bc in c.base_contracts])
-        id_to_sym = {v:k for k,v in self.exported_symbols.items()}
-        names = [id_to_sym[d] for d in base_contract_ids]
-        assert len(set(names)) == len(base_contract_ids), f'Possibly different contracts with same name: {id_to_sym} {base_contract_ids}, {names}'
+        names = [self.id_to_symbols[d] for d in base_contract_ids]
+        assert len(set(names)) == len(base_contract_ids), f'Possibly different contracts with same name: {self.id_to_symbols} {base_contract_ids}, {names}'
         return names
 
     def pruned_contracts(self) -> List[ContractData]:
