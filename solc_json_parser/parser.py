@@ -1,5 +1,4 @@
 import copy
-
 from semantic_version import Version
 import semantic_version
 import logging
@@ -8,7 +7,7 @@ import solcx
 import json
 import os
 import re
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property
 
 try:
@@ -24,6 +23,31 @@ SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
 
 INSTALLABLE_VERSION = []
+
+INTERFACE_OR_LIB_KIND = set(['interface', 'library'])
+
+
+def get_by_index(lst: Union[List, Tuple], idx: int):
+    '''Get by index from a list, returns None if the index is out of range '''
+    if len(lst) > idx:
+        return lst[idx]
+    return None
+
+
+def get_in(d, key: Any, *nkeys) -> Any:
+    '''Get in nested datastructure by keys. Only dictionary, tuple and
+    list are supported'''
+    try:
+        nd = d.get(key)
+    except Exception:
+        if type(key) is int:
+            nd = get_by_index(d, key)
+        else:
+            return None
+    if len(nkeys) > 0 and nd:
+        return get_in(nd, *nkeys)
+    return nd
+
 
 def get_candidates():
     '''
@@ -100,6 +124,14 @@ def get_line_number_range(start_index:int, offset:int, source_code:str):
     end_line   = start_line + source_code[start_index:start_index + offset].count('\n')
     return start_line, end_line
 
+def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
+    syms = [c['ast']['exportedSymbols'] for c in ast.values()]
+    return {k: v[0] for m in syms for k, v in m.items()}
+
+def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
+    syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
+    return {k: v[0] for m in syms for k, v in m.items()}
+
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
@@ -121,7 +153,8 @@ class SolidityAst():
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
-        self.exported_symbols = None # to be determined in _parse()
+        self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
+        self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
         self.contracts_dict: Dict = self._parse()
 
     @cached_property
@@ -139,7 +172,7 @@ class SolidityAst():
         for base_contract in data:
             if base_contract is None: # this is to handle [null] in json
                 continue
-            base_contracts.append(base_contract['baseName']['name'])
+            base_contracts.append(base_contract['baseName']['referencedDeclaration'])
         return base_contracts
 
     def _process_function(self, node: Dict) -> Function:
@@ -172,11 +205,11 @@ class SolidityAst():
                 # else:
                 # if no modifiers, will return []
                 for child in node['modifiers']:
-                    if child['children'][0]['attributes']['type'] == "modifier ()":
+                    if get_in(child, 'children', 0, 'attributes', 'type') == "modifier ()":
                         modifiers.append(child['children'][0]['attributes']['value'])
             return modifiers
 
-        # line number range is the same for all versions 
+        # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
         start, offset = line_number_range
@@ -228,8 +261,12 @@ class SolidityAst():
                         signature=signature, name=name, return_signature=return_signature, kind=func_kind,
                         modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
 
+    @cached_property
+    def v8(self):
+        return self.version_key == "v8"
+    
     def _process_field(self, node: Dict) -> Field:
-        # line number range is the same for all versions 
+        # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
 
@@ -252,9 +289,10 @@ class SolidityAst():
         return Modifier(visibility=visibility, name=name)
 
     def _get_contract_meta_data(self, node: Dict) -> tuple:
-        # line number range is the same for all versions 
+        # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        contract_id = node.get('id')
 
         if self.version_key == "v8":
             pass  # do nothing
@@ -273,18 +311,14 @@ class SolidityAst():
         if node.get('baseContracts') is not None:
             base_contracts = self._get_base_contracts(node.get('baseContracts'))
         else:
-            contract_dependencies = node.get('contractDependencies')
-            contract_name_to_id = self.exported_symbols
-            id_to_contract_name = {v[0]: k for k, v in contract_name_to_id.items()}
-            base_contracts = [id_to_contract_name[contract_id] for contract_id in contract_dependencies]
+            base_contracts = node.get('contractDependencies')
         contract_name = node.get('name')
 
-        return contract_kind, is_abstract, contract_name, base_contracts, line_number_range
+        return contract_id, contract_kind, is_abstract, contract_name, base_contracts, line_number_range
 
     def _process_contract(self, node: Dict) -> ContractData:
         contract_meta_data = self._get_contract_meta_data(node)
-        contract_kind, is_abstract, contract_name, base_contracts, line_number_range = contract_meta_data
-
+        contract_id, contract_kind, is_abstract, contract_name, base_contracts, line_number_range = contract_meta_data
 
         functions = []
         fields = []
@@ -293,7 +327,6 @@ class SolidityAst():
         for node in node.get(keys.children):
             if node[keys.name] == "FunctionDefinition":
                 functions.append(self._process_function(node))
-                # print(functions)
             elif node[keys.name] == "VariableDeclaration":
                 fields.append(self._process_field(node))
             elif node[keys.name] == "ModifierDefinition":
@@ -302,20 +335,15 @@ class SolidityAst():
                 # not implemented for other types
                 pass
 
-        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range)
-
-    def set_exported_symbols(self, ast):
-        if self.version_key == "v8":
-            pass
-        else:  # v4, v5, v6, v7
-            self.exported_symbols = ast.get("attributes").get("exportedSymbols")
+        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id)
 
     def _parse(self) -> Dict:
-        def _add_inherited_function_fields(data_dict: dict):
-            for contract_name, contract in data_dict.items():
+        def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
+            for contract_id, contract in data_dict.items():
                 if len(contract.base_contracts) != 0:
-                    for base_contract_name in contract.base_contracts:
-                        base_contract = data_dict[base_contract_name]
+                    for base_contract_id in contract.base_contracts:
+                        base_contract = data_dict.get(base_contract_id)
+                        base_contract_name = base_contract.name
                         for field in base_contract.fields:
                             new_field = copy.deepcopy(field)
                             new_field.inherited_from = base_contract_name
@@ -333,13 +361,20 @@ class SolidityAst():
         # use version key to get the correct version cfg
         keys = self.keys
         unique_file = set()
+
+        if self.v8:
+            self.exported_symbols = symbols_to_ids_from_ast_v8(self.solc_json_ast)
+        else:
+            self.exported_symbols = symbols_to_ids_from_ast_v7(self.solc_json_ast)
+
+        self.id_to_symbols = {v: k for k, v in self.exported_symbols.items()}
+
         for ast_key in self.solc_json_ast.keys():
             if ast_key.split(':')[0] in unique_file:
                 continue
 
             unique_file.add(ast_key.split(':')[0])
             ast = self.solc_json_ast.get(ast_key).get('ast')
-            self.set_exported_symbols(ast)
             if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
                 raise Exception("Invalid AST")
 
@@ -348,8 +383,8 @@ class SolidityAst():
                     continue
                 elif node[keys.name] == "ContractDefinition":
                     contract = self._process_contract(node)
-                    data_dict[contract.name] = contract
-                    # print(contract.name)
+                    data_dict[contract.contract_id] = contract
+                    assert contract.contract_id > 0, 'Missing contract_id in contract'
         _add_inherited_function_fields(data_dict)
         return data_dict
 
@@ -364,19 +399,18 @@ class SolidityAst():
 
     def compile_sol_to_json_ast(self) -> dict:
         # print("downloading compiler, version: ", self.exact_version)
+        current_working_dir = os.getcwd()
         try:
             solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
-            current_working_dir = os.getcwd()
             file_dir = os.path.dirname(self.file_path)
             os.chdir(file_dir)
             ast = solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
-            os.chdir(current_working_dir)
             return ast
         except Exception as e:
-            print("Error: ", e)
-            print("Please check if the version is valid")
-            exit(0) 
+            raise Exception(f"Error: {e}, Please check if the version is valid")
+        finally:
+            os.chdir(current_working_dir)
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
@@ -391,27 +425,32 @@ class SolidityAst():
         # dict to list
         return list(self.contracts_dict.values())
 
+    @cached_property
     def all_contract_names(self) -> List[str]:
-        return list(self.contracts_dict.keys())
+        return [self.id_to_symbols[d] for d in self.contracts_dict.keys()]
 
     def all_abstract_contracts(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.abstract]
 
+    @cached_property
     def all_abstract_contract_names(self) -> List[str]:
         return [contract.name for contract in self.all_abstract_contracts()]
 
+    @cached_property
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
-        base_contracts_name = []
-        for contract in contracts:
-            if contract.base_contracts:
-                base_contracts_name += contract.base_contracts
-        return list(set(base_contracts_name))
+        base_contract_ids = set([bc for c in contracts for bc in c.base_contracts])
+        names = [self.id_to_symbols[d] for d in base_contract_ids]
+        assert len(set(names)) == len(base_contract_ids), f'Possibly different contracts with same name: {self.id_to_symbols} {base_contract_ids}, {names}'
+        return names
 
     def pruned_contracts(self) -> List[ContractData]:
         contracts = self.all_contracts()
-        base_contracts_name = self.base_contract_names()
-        pruned_contracts = [c for c in contracts if c.name not in base_contracts_name and c.kind != "library"]
+        base_contracts_name = self.base_contract_names
+        pruned_contracts = [c for c in contracts \
+                            if c.name not in base_contracts_name \
+                            and c.kind not in INTERFACE_OR_LIB_KIND \
+                            and not c.abstract]
         return pruned_contracts
 
     @cached_property
@@ -419,7 +458,7 @@ class SolidityAst():
         return [c.name for c in self.pruned_contracts()]
 
     def contract_by_name(self, contract_name: str) -> ContractData:
-        return self.contracts_dict[contract_name]
+        return self.contracts_dict[self.exported_symbols[contract_name]]
 
     def fields_in_contract(self, contract: ContractData,
                            name_only: bool = False,
@@ -503,10 +542,11 @@ class SolidityAst():
         contract = self.contract_by_name(contract_name)
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
-    
+
     def all_libraries(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.kind == "library"]
-    
+
+    @cached_property
     def all_libraries_names(self) -> List[str]:
         return [lib.name for lib in self.all_libraries()]
 
@@ -522,15 +562,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     failed = []
-    for c in [args.input] if args.input else glob.glob('contracts/*.sol'):
+    for c in [args.input] if args.input else glob.glob('contracts/*.sol', recursive=True):
         try:
+            print(f'{c} {os.path.exists(c)} {type(c)} {len(c)}')
             ast = SolidityAst(c)
+            print(f'{c}: {ast.all_contract_names}')
         except:
             print(f'Testing {c} error')
             failed.append(c)
             if args.verbose:
                 traceback.print_exc()
-            
 
     if not failed:
         print('All contracts parsed success!')

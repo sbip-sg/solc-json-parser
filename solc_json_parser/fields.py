@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 @dataclass
 class Field:
@@ -28,11 +29,12 @@ class ContractData:
     abstract:       bool
     name:           str
     kind:           str
-    base_contracts: list
+    base_contracts: List[int]
     fields:         list
     functions:      list
     modifiers:      list
     line_num:       tuple # (start, end)
+    contract_id: int # unique id in ast per solc compilation
 
 @dataclass
 class Modifier:
