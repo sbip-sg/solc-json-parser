@@ -28,7 +28,7 @@ class TestParser(unittest.TestCase):
     def test_base_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_base_contract_names = {'A'}
-        base_contract_names = set(ast.base_contract_names())
+        base_contract_names = set(ast.base_contract_names)
         self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
         
     def test_pruned_contract_names(self):
@@ -253,7 +253,7 @@ class TestParser(unittest.TestCase):
         
     def test_all_library(self):
         ast = SolidityAst(f'{contracts_root}/whole.sol')
-        lib_name = ast.all_libraries_names()
+        lib_name = ast.all_libraries_names
         expected_lib_name = ["Strings", "Address"]
         self.assertEqual(expected_lib_name, lib_name, 'Should have correct library names')
 
@@ -277,7 +277,10 @@ class TestParser(unittest.TestCase):
         expected_func_kind = ['fallback', 'function', 'function']
         self.assertEqual(expected_func_kind, func_kind, 'Should have correct function kind')
 
-
+        func_name = [func.name for func in funcs]
+        expected_func_name = ['fallback', 'receive', 'fallback']
+        self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
+        
 if __name__ == '__main__':
     unittest.main()
 
