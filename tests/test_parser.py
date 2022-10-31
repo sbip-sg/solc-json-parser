@@ -257,6 +257,27 @@ class TestParser(unittest.TestCase):
         expected_lib_name = ["Strings", "Address"]
         self.assertEqual(expected_lib_name, lib_name, 'Should have correct library names')
 
+    def test_fall_back(self):
+        # for v6-v8
+        ast = SolidityAst(f'{contracts_root}/dev/fallback.sol')
+        funcs = ast.functions_in_contract_by_name('Fallback')
+
+        func_kind = [func.kind for func in funcs]
+        expected_func_kind = ['receive', 'function', 'function', 'fallback']
+        self.assertEqual(expected_func_kind, func_kind, 'Should have correct function kind')
+
+        state_mutability = [func.state_mutability for func in funcs]
+        expected_state_mutability = ['payable', 'payable', 'payable', 'nonpayable']
+        self.assertEqual(expected_state_mutability, state_mutability, 'Should have correct state_mutability')
+
+        # for v4 and v5
+        ast = SolidityAst(f'{contracts_root}/dev/fallback04.sol')
+        funcs = ast.functions_in_contract_by_name('Fallback')
+        func_kind = [func.kind for func in funcs]
+        expected_func_kind = ['fallback', 'function', 'function']
+        self.assertEqual(expected_func_kind, func_kind, 'Should have correct function kind')
+
+
 if __name__ == '__main__':
     unittest.main()
 
