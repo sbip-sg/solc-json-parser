@@ -19,7 +19,9 @@ class Function:
     return_signature: str
     name:        str
     modifiers:   list
-    line_num:    tuple # (start, end)
+    kind:        str
+    state_mutability: str
+    line_num: tuple  # (start, end)
 
 
 @dataclass
@@ -38,3 +40,12 @@ class ContractData:
 class Modifier:
     name: str
     visibility: str
+
+
+
+
+
+# [Function(signature='',           return_signature='',   name='receive',  modifiers=[], type='receive'),
+#  Function(signature='receive()',  return_signature='()', name='receive',  modifiers=[], type='function'),
+#  Function(signature='fallback()', return_signature='()', name='fallback', modifiers=[], type='function'),
+#  Function(signature='',           return_signature='',   name='fallback', modifiers=[], type='fallback')]

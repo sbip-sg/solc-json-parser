@@ -176,7 +176,10 @@ class SolidityAst():
         return base_contracts
 
     def _process_function(self, node: Dict) -> Function:
-        def _get_signature(function_name, parameters) -> str:
+        def _get_signature(function_name, parameters, kind='function') -> str:
+            if kind == 'fallback' or kind == 'receive':
+                return ''
+
             signature = "" + function_name + "("
             param_type_str = ""
             if self.version_key == "v8":
@@ -232,7 +235,7 @@ class SolidityAst():
             node = node.get("attributes") # get attributes, the structure is different
 
 
-        assert parameters is not None
+        assert parameters  is not None
         assert return_type is not None
         visibility = node.get('visibility')
         if node.get('name') is None or node.get('name') == "":
@@ -247,13 +250,16 @@ class SolidityAst():
             name = node.get('name') # function name
 
         inherited_from = ""
-        abstract = not node.get('implemented')
+        abstract  = not node.get('implemented')
         modifiers = _get_modifiers(modifier_nodes)
+        func_kind = node.get('kind')
+        state_mutability = node.get('stateMutability')
 
-        signature = _get_signature(name, parameters)
-        return_signature = _get_signature("", return_type)
+        signature = _get_signature(name, parameters, func_kind)
+        return_signature = _get_signature("", return_type, func_kind)
         return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
-                        signature=signature, name=name, return_signature=return_signature, modifiers=modifiers, line_num=line_number_range)
+                        signature=signature, name=name, return_signature=return_signature, kind=func_kind,
+                        modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
 
     @cached_property
     def v8(self):
