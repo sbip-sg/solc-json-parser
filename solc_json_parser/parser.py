@@ -1,4 +1,5 @@
 import copy
+from operator import itemgetter
 from semantic_version import Version
 import semantic_version
 import logging
@@ -25,6 +26,25 @@ PARSED_JSON = "./parsed_json"
 INSTALLABLE_VERSION = []
 
 INTERFACE_OR_LIB_KIND = set(['interface', 'library'])
+
+DEPLOY_START_OPCODES = [
+    # For solidity 0.4.23 and above
+    [
+        "PUSH1",
+        "0x80",
+        "PUSH1",
+        "0x40",
+        "MSTORE",
+    ],
+    # For lower solidity version
+    [
+        "PUSH1",
+        "0x60",
+        "PUSH1",
+        "0x40",
+        "MSTORE",
+    ],
+]
 
 
 def get_by_index(lst: Union[List, Tuple], idx: int):
@@ -132,6 +152,12 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
+
+class SolidityAstError(ValueError):
+    pass
+
+
+
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
@@ -152,9 +178,13 @@ class SolidityAst():
         self.exact_version: str   =  version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
-        self.solc_json_ast: Dict  = self.compile_sol_to_json_ast()
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
+        self.solc_compile_outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
+        if self.v8:
+            self.solc_compile_outputs += ['generated-sources-runtime', 'generated-sources']
+
+        self.compile()
         self.contracts_dict: Dict = self._parse()
 
     @cached_property
@@ -264,7 +294,7 @@ class SolidityAst():
     @cached_property
     def v8(self):
         return self.version_key == "v8"
-    
+
     def _process_field(self, node: Dict) -> Field:
         # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
@@ -376,7 +406,7 @@ class SolidityAst():
             unique_file.add(ast_key.split(':')[0])
             ast = self.solc_json_ast.get(ast_key).get('ast')
             if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
-                raise Exception("Invalid AST")
+                raise SolidityAstError("Invalid AST")
 
             for i, node in enumerate(ast[keys.children]):
                 if node[keys.name] == "PragmaDirective":
@@ -396,8 +426,7 @@ class SolidityAst():
         else:
             return None
 
-
-    def compile_sol_to_json_ast(self) -> dict:
+    def compile(self):
         # print("downloading compiler, version: ", self.exact_version)
         current_working_dir = os.getcwd()
         try:
@@ -405,10 +434,10 @@ class SolidityAst():
             solcx.set_solc_version(self.exact_version)
             file_dir = os.path.dirname(self.file_path)
             os.chdir(file_dir)
-            ast = solcx.compile_source(self.source, output_values=['ast'], solc_version=self.exact_version)
-            return ast
+            out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version)
+            self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
-            raise Exception(f"Error: {e}, Please check if the version is valid")
+            raise SolidityAstError(f"Compile failed: {e}")
         finally:
             os.chdir(current_working_dir)
 
@@ -549,6 +578,122 @@ class SolidityAst():
     @cached_property
     def all_libraries_names(self) -> List[str]:
         return [lib.name for lib in self.all_libraries()]
+
+    @staticmethod
+    def __skip_deploys(opcodes, deploy_sig_idx=0):
+        if deploy_sig_idx >= len(DEPLOY_START_OPCODES):
+            raise CombinedJsonDecoderError(
+                f'Code deploy sequence not found in opcodes: {opcodes}')
+        offset = 1
+        match_idx = 0
+        deploy_start_sequence = DEPLOY_START_OPCODES[deploy_sig_idx]
+
+        while offset < len(opcodes):
+            if opcodes[offset] == deploy_start_sequence[match_idx]:
+                match_idx += 1
+                if match_idx == len(deploy_start_sequence):
+                    break
+            else:
+                match_idx = 0
+            offset += 1
+
+        if offset < len(opcodes):
+            return opcodes[offset - len(deploy_start_sequence) + 1:]
+        return CombinedJsonDecoder.__skip_deploys(opcodes, deploy_sig_idx+1)
+
+
+    def __parse_asm_data(self, contract_name: Optional[str], deploy=False):
+        '''Parse `asm.data` returns a dict of
+        - `idx` source file index, default to 0
+        - `code` list,
+        - `pc2idx` a dict from program counter to `code` index'''
+        combined_json = self.solc_json_ast
+        contract = combined_json.get(contract_name)
+        if contract is None:
+            raise SolidityAstError(f'Contract {contract_name} not found in compiled json')
+        asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
+        # deploys = contract.get('asm').get('.code')
+        opcodes = contract.get('opcodes').split()
+
+        if not deploy:
+            opcodes = SolidityAst.__skip_deploys(opcodes)
+
+        if not (opcodes or asm_data):
+            raise(SolidityAstError('Missing required params!'))
+
+        if deploy:
+            code = asm_data
+        else:
+            code = asm_data.get(f'{0}').get('.code')
+
+        offset = 0  # address offset / program counter
+        idx = 0     # index of code list
+        idx2pc = {}  # dict: index -> pc
+        op_idx = 0  # idx value in contract opcodes list
+
+        i = 0
+        while i < len(code):
+            c = code[i]
+            i += 1
+            idx2pc[idx] = offset
+            size = 2  # opcode size: one byte as hex takes two chars
+            datasize = 0
+            opcode = c.get('name').split()[0]
+            if opcode == 'PUSHDEPLOYADDRESS':
+                i += 2
+                continue
+
+            # logger.debug(f'opcode: {opcode}')
+
+            if (not opcode.isupper()):
+                idx += 1
+                continue
+            if opcode.startswith('PUSH'):
+                op = opcodes[op_idx]
+                try:
+                    datasize = int(op[4:]) * 2
+                except:
+                    continue
+                op_idx += 1
+
+            size += datasize
+            # print(f'PC {offset:4} IDX: {idx:4} {c}')
+            idx += 1
+            offset += int(size / 2)
+            op_idx += 1
+
+        pc2idx = {v: k for k, v in idx2pc.items()}
+        return dict(code=code, pc2idx=pc2idx)
+
+
+    def source_by_pc(self, contract_name: str, pc: int, deploy=False):
+        '''
+        Get source code by program counter:
+        - `pc`: program counter
+        - `deploy`: set to true to search in deploy opcodes
+        '''
+        code, pc2idx = itemgetter('code', 'pc2idx')(self.__parse_asm_data(contract_name, deploy=deploy))
+        part = code[pc2idx[pc]]
+        
+
+        begin, end = itemgetter('begin', 'end')(part)
+
+        source = 0
+        if ('source' in part.keys()):
+            source = itemgetter('source')(part)
+
+        if source == 1 and self.v8 and not deploy:
+            combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
+        elif source == 1 and self.v8 and deploy:
+            combined_source = self.solc_json_ast[contract_name]['generated-sources'][0]['contents']
+        else:
+            combined_source = self.source
+
+        source_as_bytes = combined_source.encode()
+        fragment = source_as_bytes[begin:end].decode()
+        linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
+                    source_as_bytes[:end].decode().count('\n') + 1)
+        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source)
 
 
 if __name__ == '__main__':
