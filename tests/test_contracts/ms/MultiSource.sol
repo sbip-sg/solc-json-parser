@@ -2,15 +2,20 @@
 
 pragma solidity 0.7.0;
 
-import {MultiSourceLib} from "./MultiSourceLib.sol";
+import {MultiSourceUtils} from "./MultiSourceLib.sol";
 
 contract MultiSource{
-    using MultiSourceLib for uint32;
+    // using MultiSourceLib for uint32;
+    uint32 i;
+    MultiSourceUtils utils;
     constructor(){
+        utils = new MultiSourceUtils();
     }
 
-    function add(uint32 x, uint32 y) public pure returns (uint256){
-        return x.unsafeAdd(y);
+    function add(uint32 x, uint32 y) public returns (uint256){
+        // i = x.unsafeAdd(y);
+        i = utils.unsafeAdd(x, y);
+        return i;
     }
     
 }
