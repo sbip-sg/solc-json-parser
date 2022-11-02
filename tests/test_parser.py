@@ -280,7 +280,3 @@ class TestParser(unittest.TestCase):
         func_name = [func.name for func in funcs]
         expected_func_name = ['fallback', 'receive', 'fallback']
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
-        
-if __name__ == '__main__':
-    unittest.main()
-

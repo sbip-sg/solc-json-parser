@@ -22,8 +22,3 @@ class TestFixImport(unittest.TestCase):
 
         for (line, expected) in tests:
             self.assertEqual(expected, to_simple_name(line))
-
-
-if __name__ == '__main__':
-    unittest.main()
-
