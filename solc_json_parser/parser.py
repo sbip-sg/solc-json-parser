@@ -170,8 +170,10 @@ class SolidityAst():
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
+            self.root_path = None
         else:
             self.file_path = contract_source_path
+            self.root_path = os.path.dirname(self.file_path)
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
@@ -432,8 +434,8 @@ class SolidityAst():
         try:
             solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
-            file_dir = os.path.dirname(self.file_path)
-            os.chdir(file_dir)
+            if self.root_path:
+                os.chdir(self.root_path)
             out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version)
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
@@ -602,7 +604,7 @@ class SolidityAst():
         return CombinedJsonDecoder.__skip_deploys(opcodes, deploy_sig_idx+1)
 
 
-    def __parse_asm_data(self, contract_name: Optional[str], deploy=False):
+    def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
         - `code` list,
@@ -666,7 +668,11 @@ class SolidityAst():
         return dict(code=code, pc2idx=pc2idx)
 
 
-    def source_by_pc(self, contract_name: str, pc: int, deploy=False):
+    def source_path_by_contract(self, contract_name) -> Optional[str]:
+        path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
+        return None if (not path) or path == '<stdin>' else os.path.join(self.root_path, path)
+
+    def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
         - `pc`: program counter
@@ -674,26 +680,37 @@ class SolidityAst():
         '''
         code, pc2idx = itemgetter('code', 'pc2idx')(self.__parse_asm_data(contract_name, deploy=deploy))
         part = code[pc2idx[pc]]
-        
 
         begin, end = itemgetter('begin', 'end')(part)
 
-        source = 0
-        if ('source' in part.keys()):
-            source = itemgetter('source')(part)
-
-        if source == 1 and self.v8 and not deploy:
-            combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
-        elif source == 1 and self.v8 and deploy:
-            combined_source = self.solc_json_ast[contract_name]['generated-sources'][0]['contents']
+        source_path = self.source_path_by_contract(contract_name)
+        if source_path:
+            with open(source_path, 'r') as f:
+                source = f.read()
         else:
-            combined_source = self.source
-
-        source_as_bytes = combined_source.encode()
+            source = self.source
+        
+        source_as_bytes = source.encode()
         fragment = source_as_bytes[begin:end].decode()
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
-        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source)
+        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_path=(source_path or self.file_path))
+
+    def best_effort_source_by_pc(self, pc: int, deploy=False, first_try_contract=None) -> Dict[str, Any]:
+        errors = []
+        
+        if first_try_contract:
+            cs = [first_try_contract] + [c for c in list(self.all_contract_names) if c != first_try_contract]
+        else:
+            cs = self.all_contract_names
+
+        for c in cs:
+            try:
+                return self.source_by_pc(c, pc, deploy)
+            except Exception as e:
+                errors.append(e)
+        
+        raise SolidityAstError(f'best_effort_source_by_pc failed, errors: {errors}')
 
 
 if __name__ == '__main__':
