@@ -584,8 +584,7 @@ class SolidityAst():
     @staticmethod
     def __skip_deploys(opcodes, deploy_sig_idx=0):
         if deploy_sig_idx >= len(DEPLOY_START_OPCODES):
-            raise CombinedJsonDecoderError(
-                f'Code deploy sequence not found in opcodes: {opcodes}')
+            raise SolidityAstError(f'Code deploy sequence not found in opcodes: {opcodes}')
         offset = 1
         match_idx = 0
         deploy_start_sequence = DEPLOY_START_OPCODES[deploy_sig_idx]
@@ -601,7 +600,7 @@ class SolidityAst():
 
         if offset < len(opcodes):
             return opcodes[offset - len(deploy_start_sequence) + 1:]
-        return CombinedJsonDecoder.__skip_deploys(opcodes, deploy_sig_idx+1)
+        return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
 
 
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
