@@ -280,3 +280,24 @@ class TestParser(unittest.TestCase):
         func_name = [func.name for func in funcs]
         expected_func_name = ['fallback', 'receive', 'fallback']
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
+
+
+    def test_program_counter(self):
+        # ast = SolidityAst(f'{contracts_root}/dev/3_Ballot.sol', version='0.8.17')
+        # x = ast.source_by_pc(contract_name='Ballot', pc=383, deploy=False)
+        # for key, item in x.items():
+        #     print(key, ": ", item)
+        x = "000,002,004,005,006,007,008,011,012,014,015,016,017,018,021,022,025,027,028,030,031,032,034,036,037,038,039,040,043,044,046,047,048,049,050,052,053,054,057,058,060,061,063,064,065,070,071,074,075,076,081,082,085,086,087,089,090,091,092,095,098,099,100,102,103,106,107,108,111,112,113,115,116,117,118,119,120,121,122,125,127,128,129,130,131,132,133,136,137,138,141,142,143,146,147,148,149,150,152,153"
+        x = list(map(int, x.split(',')))
+        # print(x)
+        ast = SolidityAst(f'{contracts_root}/dev/1_Storage.sol')
+        t, keys = ast.source_by_pc(contract_name='Storage', pc=0, deploy=False)
+        for key, item in t.items():
+            print(key, ": ", item)
+
+        print(keys)
+        # print(len(keys), len(x))
+        # match_entry = [x[i]==keys[i] for i in range(len(x))]
+        # print(match_entry)
+
+
