@@ -15,5 +15,9 @@ abstract contract BugC{
             credit[msg.sender] = 0;
         }
     }
+
+    function get_balance() public view returns (uint){
+        return 100;
+    }
 }
     

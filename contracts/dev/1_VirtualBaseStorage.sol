@@ -1,10 +1,7 @@
-// SPDX-License-Identifier: GPL-3.0
-
 pragma solidity 0.8.17;
 
-
-contract Storage {
-
+abstract contract BaseStorage {
+    uint256 some;
     uint256 number;
 
     function store(uint256 num) public {
@@ -14,5 +11,4 @@ contract Storage {
     function retrieve() public view returns (uint256){
         return number;
     }
-
 }
