@@ -283,7 +283,6 @@ class TestParser(unittest.TestCase):
 
 
     def test_program_counter(self):
-        contracts_root = '../contracts'
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version='0.8.17')
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol')
         x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
         print(x)

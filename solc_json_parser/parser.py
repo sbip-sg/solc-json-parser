@@ -615,6 +615,10 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
+        source_list = contract.get('asm').get('sourceList')
+        # assert source_list
+        # from the source_list, the given sol file from constructor will be set to `<stdin>`
+
 
         if not deploy:
             opcodes = SolidityAst.__skip_deploys(opcodes)
@@ -664,7 +668,7 @@ class SolidityAst():
             op_idx += 1
 
         pc2idx = {v: k for k, v in idx2pc.items()}
-        return dict(code=code, pc2idx=pc2idx)
+        return dict(code=code, pc2idx=pc2idx, source_list=source_list)
 
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
@@ -677,16 +681,17 @@ class SolidityAst():
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
         '''
-        code, pc2idx = itemgetter('code', 'pc2idx')(self.__parse_asm_data(contract_name, deploy=deploy))
+        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         part = code[pc2idx[pc]]
 
-        begin, end = itemgetter('begin', 'end')(part)
-
-        source_path = self.source_path_by_contract(contract_name)
-        if source_path:
+        begin, end, source_idx = itemgetter('begin', 'end', 'source')(part)
+        source_path = source_list[source_idx]
+        if source_path != '<stdin>':
+            source_path = os.path.join(self.root_path, source_path)
             with open(source_path, 'r') as f:
                 source = f.read()
         else:
+            source_path = self.file_path
             source = self.source
         
         source_as_bytes = source.encode()
