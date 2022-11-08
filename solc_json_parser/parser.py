@@ -671,6 +671,17 @@ class SolidityAst():
         path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
         return None if (not path) or path == '<stdin>' else os.path.join(self.root_path, path)
 
+    def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
+        '''Get source code by contract name and line numbers, line numbers are zero indexed'''
+        source_path = self.source_path_by_contract(contract_name)
+        if source_path:
+            with open(source_path, 'r') as f:
+                source = f.read()
+        else:
+            source = self.source
+
+        return source.split('\n')[line_start: line_end]
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
