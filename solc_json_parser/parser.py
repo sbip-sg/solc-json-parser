@@ -293,6 +293,17 @@ class SolidityAst():
                         signature=signature, name=name, return_signature=return_signature, kind=func_kind,
                         modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
 
+
+    def get_yul_lines(self, contract_name: str, deploy: bool)->List[str]:
+        if not self.v8:
+            return []
+
+        if deploy:
+            return self.solc_json_ast.get(contract_name).get('generated-sources')[0]['contents'].split("\n")
+        else:
+            return self.solc_json_ast.get(contract_name).get('generated-sources-runtime')[0]['contents'].split("\n")
+
+
     @cached_property
     def v8(self):
         return self.version_key == "v8"
@@ -675,6 +686,17 @@ class SolidityAst():
         path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
         return None if (not path) or path == '<stdin>' else os.path.join(self.root_path, path)
 
+    def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
+        '''Get source code by contract name and line numbers, line numbers are zero indexed'''
+        source_path = self.source_path_by_contract(contract_name)
+        if source_path:
+            with open(source_path, 'r') as f:
+                source = f.read()
+        else:
+            source = self.source
+
+        return source.split('\n')[line_start: line_end]
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
@@ -689,20 +711,30 @@ class SolidityAst():
         if source_path != '<stdin>':
             source_path = os.path.join(self.root_path, source_path)
             with open(source_path, 'r') as f:
-                source = f.read()
+                source_code = f.read()
         else:
-            source_path = self.file_path
-            source = self.source
-        
-        source_as_bytes = source.encode()
+            source_code = self.source
+
+        source = get_in(part, 'source') or 0 # WARN: assuming yul source is has index 1, not true for multi-source file contract
+
+        if source == 1 and self.v8 and not deploy:
+            combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
+        elif source == 1 and self.v8 and deploy:
+            combined_source = self.solc_json_ast[contract_name]['generated-sources'][0]['contents']
+        else:
+            combined_source = source_code
+        # assumes utf8 encoding here
+        source_as_bytes = combined_source.encode()
         fragment = source_as_bytes[begin:end].decode()
+        # print ("fragment ", fragment)
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
-        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_path=(source_path or self.file_path))
+        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
+
 
     def best_effort_source_by_pc(self, pc: int, deploy=False, first_try_contract=None) -> Dict[str, Any]:
         errors = []
-        
+
         if first_try_contract:
             cs = [first_try_contract] + [c for c in list(self.all_contract_names) if c != first_try_contract]
         else:
@@ -713,7 +745,7 @@ class SolidityAst():
                 return self.source_by_pc(c, pc, deploy)
             except Exception as e:
                 errors.append(e)
-        
+
         raise SolidityAstError(f'best_effort_source_by_pc failed, errors: {errors}')
 
 
