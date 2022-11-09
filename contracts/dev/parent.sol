@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-abstract contract BugC{
+contract BugC{
     mapping (address => uint) credit;
     uint balance;
     
