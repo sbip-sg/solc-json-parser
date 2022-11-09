@@ -619,6 +619,7 @@ class SolidityAst():
         - `idx` source file index, default to 0
         - `code` list,
         - `pc2idx` a dict from program counter to `code` index'''
+
         combined_json = self.solc_json_ast
         contract = combined_json.get(contract_name)
         if contract is None:
@@ -626,7 +627,12 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
-        source_list = contract.get('asm').get('sourceList')
+        if self.v8:
+            source_list = contract.get('asm').get('sourceList')
+        else:
+            source_list = [f"{key_name}.sol" for key_name in combined_json.keys()]
+
+
         # assert source_list
         # from the source_list, the given sol file from constructor will be set to `<stdin>`
 
