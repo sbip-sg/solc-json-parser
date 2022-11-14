@@ -280,3 +280,10 @@ class TestParser(unittest.TestCase):
         func_name = [func.name for func in funcs]
         expected_func_name = ['fallback', 'receive', 'fallback']
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
+
+
+    def test_program_counter(self):
+        contracts_root = "./contracts"
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol')
+        x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
+        # print(x)

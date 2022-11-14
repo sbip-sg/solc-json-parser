@@ -396,7 +396,7 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("dev")
+        # self.save_solc_ast_json("Storage_solc_ast_no_abstractBugC")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -619,6 +619,7 @@ class SolidityAst():
         - `idx` source file index, default to 0
         - `code` list,
         - `pc2idx` a dict from program counter to `code` index'''
+
         combined_json = self.solc_json_ast
         contract = combined_json.get(contract_name)
         if contract is None:
@@ -626,6 +627,15 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
+        if self.v8:
+            source_list = contract.get('asm').get('sourceList')
+        else:
+            source_list = [f"{key_name}.sol" for key_name in combined_json.keys()]
+
+
+        # assert source_list
+        # from the source_list, the given sol file from constructor will be set to `<stdin>`
+
 
         if not deploy:
             opcodes = SolidityAst.__skip_deploys(opcodes)
@@ -675,7 +685,7 @@ class SolidityAst():
             op_idx += 1
 
         pc2idx = {v: k for k, v in idx2pc.items()}
-        return dict(code=code, pc2idx=pc2idx)
+        return dict(code=code, pc2idx=pc2idx, source_list=source_list)
 
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
@@ -699,13 +709,13 @@ class SolidityAst():
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
         '''
-        code, pc2idx = itemgetter('code', 'pc2idx')(self.__parse_asm_data(contract_name, deploy=deploy))
+        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         part = code[pc2idx[pc]]
 
-        begin, end = itemgetter('begin', 'end')(part)
-
-        source_path = self.source_path_by_contract(contract_name)
-        if source_path:
+        begin, end, source_idx = itemgetter('begin', 'end', 'source')(part)
+        source_path = source_list[source_idx]
+        if source_path != '<stdin>':
+            source_path = os.path.join(self.root_path, source_path)
             with open(source_path, 'r') as f:
                 source_code = f.read()
         else:
