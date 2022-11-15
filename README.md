@@ -19,7 +19,7 @@ from solc_json_parser.parser import SolidityAst
 
 # The input can be a file path or source code
 ast = SolidityAst('contracts/BlackScholesEstimate_8.sol')
-ast.all_contract_names()
+ast.all_contract_names
 ```
 
 Flatten source code:
