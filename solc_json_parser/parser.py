@@ -713,15 +713,15 @@ class SolidityAst():
         return source.split('\n')[line_start: line_end]
 
     @cache
-    def all_pcs(self, contract_name: str) -> set[int]:
+    def all_pcs(self, contract_name: str, deploy: bool) -> set[int]:
         '''Return all program counters by contract name'''
-        asm = self.__parse_asm_data(contract_name, deploy=False)
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return set((get_in(asm, 'pc2idx') or {}).keys())
 
     @cache
-    def all_jumps(self, contract_name: str) -> set[int]:
+    def all_jumps(self, contract_name: str, deploy) -> set[int]:
         '''Return all JUMP, JUMPI destinations by contract name'''
-        asm = self.__parse_asm_data(contract_name, deploy=False)
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return asm['seen_targets']
     
     def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
