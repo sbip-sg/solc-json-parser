@@ -8,8 +8,8 @@ import solcx
 import json
 import os
 import re
-from typing import Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property
+from typing import Collection, Dict, Optional, List, Any, Tuple, Union
+from functools import cached_property, cache
 
 try:
     from fields import Field, Function, ContractData, Modifier
@@ -614,6 +614,15 @@ class SolidityAst():
         return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
 
 
+    @staticmethod
+    def __record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int]) -> set[int]:
+        if opcode == 'JUMPI':
+            seen_targets.add(int(code[idx-1].get('value')))
+            seen_targets.add(int(pc + 1))
+
+        return seen_targets
+    
+    @cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
@@ -632,11 +641,6 @@ class SolidityAst():
         else:
             source_list = [f"{key_name}.sol" for key_name in combined_json.keys()]
 
-
-        # assert source_list
-        # from the source_list, the given sol file from constructor will be set to `<stdin>`
-
-
         if not deploy:
             opcodes = SolidityAst.__skip_deploys(opcodes)
 
@@ -650,22 +654,25 @@ class SolidityAst():
 
         offset = 0  # address offset / program counter
         idx = 0     # index of code list
-        idx2pc = {}  # dict: index -> pc
+        idx2pc = {} # dict: index -> pc
         op_idx = 0  # idx value in contract opcodes list
 
         i = 0
+        seen_targets = set()
         while i < len(code):
             c = code[i]
             i += 1
             idx2pc[idx] = offset
             size = 2  # opcode size: one byte as hex takes two chars
             datasize = 0
+
             opcode = c.get('name').split()[0]
+
+            SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets)
+            
             if opcode == 'PUSHDEPLOYADDRESS':
                 i += 2
                 continue
-
-            # logger.debug(f'opcode: {opcode}')
 
             if (not opcode.isupper()):
                 idx += 1
@@ -685,7 +692,7 @@ class SolidityAst():
             op_idx += 1
 
         pc2idx = {v: k for k, v in idx2pc.items()}
-        return dict(code=code, pc2idx=pc2idx, source_list=source_list)
+        return dict(code=code, pc2idx=pc2idx, source_list=source_list, seen_targets=seen_targets)
 
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
@@ -702,6 +709,23 @@ class SolidityAst():
             source = self.source
 
         return source.split('\n')[line_start: line_end]
+
+    @cache
+    def all_pcs(self, contract_name: str, deploy: bool) -> set[int]:
+        '''Return all program counters by contract name'''
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
+        return set((get_in(asm, 'pc2idx') or {}).keys())
+
+    @cache
+    def all_jumps(self, contract_name: str, deploy) -> set[int]:
+        '''Return all JUMP, JUMPI destinations by contract name'''
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
+        return asm['seen_targets']
+    
+    def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
+        all_pcs = self.all_pcs(contract_name)
+        return len(set(pcs)) /  len(all_pcs) * 100 if all_pcs else 0
+
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
@@ -736,23 +760,6 @@ class SolidityAst():
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
         return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
-
-
-    def best_effort_source_by_pc(self, pc: int, deploy=False, first_try_contract=None) -> Dict[str, Any]:
-        errors = []
-
-        if first_try_contract:
-            cs = [first_try_contract] + [c for c in list(self.all_contract_names) if c != first_try_contract]
-        else:
-            cs = self.all_contract_names
-
-        for c in cs:
-            try:
-                return self.source_by_pc(c, pc, deploy)
-            except Exception as e:
-                errors.append(e)
-
-        raise SolidityAstError(f'best_effort_source_by_pc failed, errors: {errors}')
 
 
 if __name__ == '__main__':
