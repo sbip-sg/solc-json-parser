@@ -619,7 +619,7 @@ class SolidityAst():
         if opcode == 'JUMPI':
             seen_targets.add(int(code[idx-1].get('value')))
             seen_targets.add(int(pc + 1))
-        elif opcode == 'JUMP' and 'in' in get_in(code, idx, 'jumpType') or '':
+        elif opcode == 'JUMP' and 'in' in (get_in(code, idx, 'jumpType') or ''):
             seen_targets.add(int(code[idx-1].get('value')))
 
         return seen_targets
@@ -714,11 +714,13 @@ class SolidityAst():
 
     @cache
     def all_pcs(self, contract_name: str) -> set[int]:
+        '''Return all program counters by contract name'''
         asm = self.__parse_asm_data(contract_name, deploy=False)
         return set((get_in(asm, 'pc2idx') or {}).keys())
 
     @cache
     def all_jumps(self, contract_name: str) -> set[int]:
+        '''Return all JUMP, JUMPI destinations by contract name'''
         asm = self.__parse_asm_data(contract_name, deploy=False)
         return asm['seen_targets']
     
