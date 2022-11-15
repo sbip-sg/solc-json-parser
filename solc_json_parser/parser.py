@@ -8,8 +8,8 @@ import solcx
 import json
 import os
 import re
-from typing import Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property
+from typing import Collection, Dict, Optional, List, Any, Tuple, Union
+from functools import cached_property, cache
 
 try:
     from fields import Field, Function, ContractData, Modifier
@@ -613,7 +613,7 @@ class SolidityAst():
             return opcodes[offset - len(deploy_start_sequence) + 1:]
         return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
 
-
+    @cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
@@ -703,6 +703,12 @@ class SolidityAst():
 
         return source.split('\n')[line_start: line_end]
 
+    def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
+        asm = self.__parse_asm_data(contract_name, deploy=False)
+        all_pcs = set((get_in(asm, 'pc2idx') or {}).keys())
+        return len(set(pcs)) /  len(set(all_pcs)) * 100
+
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
@@ -736,23 +742,6 @@ class SolidityAst():
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
         return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
-
-
-    def best_effort_source_by_pc(self, pc: int, deploy=False, first_try_contract=None) -> Dict[str, Any]:
-        errors = []
-
-        if first_try_contract:
-            cs = [first_try_contract] + [c for c in list(self.all_contract_names) if c != first_try_contract]
-        else:
-            cs = self.all_contract_names
-
-        for c in cs:
-            try:
-                return self.source_by_pc(c, pc, deploy)
-            except Exception as e:
-                errors.append(e)
-
-        raise SolidityAstError(f'best_effort_source_by_pc failed, errors: {errors}')
 
 
 if __name__ == '__main__':
