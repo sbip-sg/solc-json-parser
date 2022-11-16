@@ -740,7 +740,6 @@ class SolidityAst():
         '''
         code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         part = code[pc2idx[pc]]
-        print(f'part {part}')
 
         begin, end = itemgetter('begin', 'end')(part)
         source_idx = part.get('source')
