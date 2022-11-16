@@ -727,6 +727,11 @@ class SolidityAst():
         return len(set(pcs)) /  len(all_pcs) * 100 if all_pcs else 0
 
 
+    def __source_path_from_source_list(self, source_list: Optional[List[str]], source_index: Optional[int]) -> Optional[str]:
+        if source_index is not None and source_list:
+            return source_list[source_index]
+        return None
+    
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
@@ -736,9 +741,10 @@ class SolidityAst():
         code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         part = code[pc2idx[pc]]
 
-        begin, end, source_idx = itemgetter('begin', 'end', 'source')(part)
-        source_path = source_list[source_idx]
-        if self.root_path and source_path != '<stdin>':
+        begin, end = itemgetter('begin', 'end')(part)
+        source_idx = part.get('source')
+        source_path = self.__source_path_from_source_list(source_list, source_idx)
+        if self.root_path and source_path and source_path != '<stdin>':
             source_path = os.path.join(self.root_path, source_path)
             with open(source_path, 'r') as f:
                 source_code = f.read()
