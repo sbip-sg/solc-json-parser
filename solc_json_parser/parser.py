@@ -621,7 +621,7 @@ class SolidityAst():
             seen_targets.add(int(pc + 1))
 
         return seen_targets
-    
+
     @cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
@@ -669,7 +669,7 @@ class SolidityAst():
             opcode = c.get('name').split()[0]
 
             SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets)
-            
+
             if opcode == 'PUSHDEPLOYADDRESS':
                 i += 2
                 continue
@@ -721,7 +721,7 @@ class SolidityAst():
         '''Return all JUMP, JUMPI destinations by contract name'''
         asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return asm['seen_targets']
-    
+
     def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
         all_pcs = self.all_pcs(contract_name)
         return len(set(pcs)) /  len(all_pcs) * 100 if all_pcs else 0
@@ -738,7 +738,7 @@ class SolidityAst():
 
         begin, end, source_idx = itemgetter('begin', 'end', 'source')(part)
         source_path = source_list[source_idx]
-        if source_path != '<stdin>':
+        if self.root_path and source_path != '<stdin>':
             source_path = os.path.join(self.root_path, source_path)
             with open(source_path, 'r') as f:
                 source_code = f.read()
