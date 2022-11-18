@@ -153,6 +153,22 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
+def get_increased_version(current_version: str) -> str:
+    # convert current version str to Version object
+    current_version_obj = Version(current_version)
+    versions = solcx.get_installable_solc_versions()
+    # reverse versions list so that it is from small to large
+    versions = sorted(versions)
+    # get the next minimum version
+    try:
+        next_version = next(v for v in versions if v > current_version_obj)
+    except StopIteration:
+        exit(1)
+    except Exception as e:
+        exit(1)
+    return str(next_version)
+
+
 class SolidityAstError(ValueError):
     pass
 
@@ -166,7 +182,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None):
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
@@ -177,7 +193,8 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
-        self.exact_version: str   =  version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
+        self.retry_num = retry_num or 0
+        self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
@@ -447,12 +464,23 @@ class SolidityAst():
             solcx.set_solc_version(self.exact_version)
             if self.root_path:
                 os.chdir(self.root_path)
+                self.root_path = os.getcwd()
             out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version)
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
-            raise SolidityAstError(f"Compile failed: {e}")
+            if self.retry_num > 0:
+                print(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
+
+                self.retry_num -= 1
+                self.exact_version = get_increased_version(self.exact_version)
+                print(f"Retrying with increased version: {self.exact_version}")
+                self.compile()
+            else:
+                raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
         finally:
             os.chdir(current_working_dir)
+
+
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:

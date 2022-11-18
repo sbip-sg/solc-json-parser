@@ -1,5 +1,5 @@
 import unittest
-from solc_json_parser.parser import SolidityAst
+from solc_json_parser.parser import SolidityAst, SolidityAstError
 contracts_root = './contracts'
 
 class TestParser(unittest.TestCase):
@@ -287,3 +287,13 @@ class TestParser(unittest.TestCase):
         ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol')
         x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
         # print(x)
+
+    def test_add_automatic_retrying(self):
+        # this will work
+        ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=10)
+
+        # this will fail
+        try:
+            ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=0)
+        except SolidityAstError:
+            print("SolidityAstError is expected")
