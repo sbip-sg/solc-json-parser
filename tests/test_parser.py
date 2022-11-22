@@ -297,3 +297,11 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=0)
         except SolidityAstError:
             print("SolidityAstError is expected")
+
+    def test_unicode_characters(self):
+        contracts_root = "../contracts"
+        ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.11')
+        functions = ast.abstract_function_in_contract_by_name('RampInstantEscrowsPoolInterface')
+        self.assertTrue(functions[0].raw.startswith("function"))
+        print(functions[0])
+
