@@ -153,6 +153,7 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
+@cache
 def get_increased_version(current_version: str) -> str:
     # convert current version str to Version object
     current_version_obj = Version(current_version)
@@ -163,9 +164,9 @@ def get_increased_version(current_version: str) -> str:
     try:
         next_version = next(v for v in versions if v > current_version_obj)
     except StopIteration:
-        exit(1)
+        raise Exception(f'StopIteration, No next version available for {current_version}')
     except Exception as e:
-        exit(1)
+        raise RuntimeError(f'Unknown error: {e}')
     return str(next_version)
 
 
