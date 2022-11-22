@@ -245,7 +245,7 @@ class SolidityAst():
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
         start, offset = line_number_range_raw[0], line_number_range_raw[1]
-        raw = self.source[start: start+offset]
+        raw = self.source.encode()[start: start+offset].decode()
 
         if self.version_key == "v8":
             parameters = node.get('parameters')
