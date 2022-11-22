@@ -287,3 +287,8 @@ class TestParser(unittest.TestCase):
         ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol')
         x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
         # print(x)
+
+    def test_unicode_characters(self):
+        ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.11')
+        functions = ast.abstract_function_in_contract_by_name('RampInstantEscrowsPoolInterface')
+        self.assertTrue(functions[0].raw.startswith("function"))
