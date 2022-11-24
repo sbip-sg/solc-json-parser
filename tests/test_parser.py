@@ -305,3 +305,8 @@ class TestParser(unittest.TestCase):
         self.assertTrue(functions[0].raw.startswith("function"))
         print(functions[0])
 
+    def test_automatic_increase_version(self):
+        contracts_root = "../contracts"
+        ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.9', retry_num=3)
+
+

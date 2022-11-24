@@ -71,7 +71,8 @@ def get_in(d, key: Any, *nkeys) -> Any:
 
 def get_candidates():
     '''
-    Returns a cached list of solc versions available for install
+    Returns a cached list of solc versions available for install,
+    version list is sorted in ascending order
     '''
     global INSTALLABLE_VERSION
     if INSTALLABLE_VERSION:
@@ -153,13 +154,15 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
-@cache
+
 def get_increased_version(current_version: str) -> str:
+    """
+    :param current_version:
+    :return: next solc valid version, e.g. 0.5.10 -> 0.5.11
+    """
     # convert current version str to Version object
     current_version_obj = Version(current_version)
-    versions = solcx.get_installable_solc_versions()
-    # reverse versions list so that it is from small to large
-    versions = sorted(versions)
+    versions = get_candidates()
     # get the next minimum version
     try:
         next_version = next(v for v in versions if v > current_version_obj)
