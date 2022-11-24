@@ -22,7 +22,7 @@ jobs:
         cache: 'pip'
 
     - name: Test
-      run: python setup.py pytest
+      run: python -m unittest
 
         
 
