@@ -162,20 +162,14 @@ def get_increased_version(current_version: str) -> str:
     """
     # convert current version str to Version object
     current_version_obj = Version(current_version)
-    versions = get_candidates()
-    # get the next minimum version
-    try:
-        next_version = next(v for v in versions if v > current_version_obj)
-    except StopIteration:
-        raise Exception(f'StopIteration, No next version available for {current_version}')
-    except Exception as e:
-        raise RuntimeError(f'Unknown error: {e}')
+    next_version = select_available_version(str(current_version_obj.next_patch()), install=True)
+    if not next_version:
+        raise SolidityAstError(f'No next version available for {current_version}')
     return str(next_version)
 
 
 class SolidityAstError(ValueError):
     pass
-
 
 
 class SolidityAst():
@@ -473,11 +467,8 @@ class SolidityAst():
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
             if self.retry_num > 0:
-                print(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
-
                 self.retry_num -= 1
                 self.exact_version = get_increased_version(self.exact_version)
-                print(f"Retrying with increased version: {self.exact_version}")
                 self.compile()
             else:
                 raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
