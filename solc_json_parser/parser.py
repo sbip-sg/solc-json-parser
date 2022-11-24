@@ -71,7 +71,8 @@ def get_in(d, key: Any, *nkeys) -> Any:
 
 def get_candidates():
     '''
-    Returns a cached list of solc versions available for install
+    Returns a cached list of solc versions available for install,
+    version list is sorted in ascending order
     '''
     global INSTALLABLE_VERSION
     if INSTALLABLE_VERSION:
@@ -153,9 +154,22 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
+
+def get_increased_version(current_version: str) -> str:
+    """
+    :param current_version:
+    :return: next solc valid version, e.g. 0.5.10 -> 0.5.11
+    """
+    # convert current version str to Version object
+    current_version_obj = Version(current_version)
+    next_version = select_available_version(str(current_version_obj.next_patch()), install=True)
+    if not next_version:
+        raise SolidityAstError(f'No next version available for {current_version}')
+    return str(next_version)
+
+
 class SolidityAstError(ValueError):
     pass
-
 
 
 class SolidityAst():
@@ -166,7 +180,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None):
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
@@ -177,7 +191,8 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
-        self.exact_version: str   =  version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
+        self.retry_num = retry_num or 0
+        self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
         self.keys: addict.Dict    = v_keys[self.version_key]
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
@@ -447,12 +462,20 @@ class SolidityAst():
             solcx.set_solc_version(self.exact_version)
             if self.root_path:
                 os.chdir(self.root_path)
+                self.root_path = os.getcwd()
             out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version)
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
-            raise SolidityAstError(f"Compile failed: {e}")
+            if self.retry_num > 0:
+                self.retry_num -= 1
+                self.exact_version = get_increased_version(self.exact_version)
+                self.compile()
+            else:
+                raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
         finally:
             os.chdir(current_working_dir)
+
+
 
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:

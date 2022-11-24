@@ -1,5 +1,5 @@
 import unittest
-from solc_json_parser.parser import SolidityAst
+from solc_json_parser.parser import SolidityAst, SolidityAstError
 contracts_root = './contracts'
 
 class TestParser(unittest.TestCase):
@@ -292,3 +292,14 @@ class TestParser(unittest.TestCase):
         ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.11')
         functions = ast.abstract_function_in_contract_by_name('RampInstantEscrowsPoolInterface')
         self.assertTrue(functions[0].raw.startswith("function"))
+
+
+    def test_add_automatic_retrying(self):
+        # this will work
+        ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=10)
+
+        # this will fail
+        try:
+            ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=0)
+        except SolidityAstError:
+            print("SolidityAstError is expected")
