@@ -698,6 +698,8 @@ class SolidityAst():
             size = 2  # opcode size: one byte as hex takes two chars
             datasize = 0
 
+            # print(f'{contract_name} pc {offset} c {c}')
+
             opcode = c.get('name').split()[0]
 
             SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets)
