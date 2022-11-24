@@ -23,7 +23,7 @@ jobs:
 
     - name: Test
       run: |
-        python install .
+        pip install .
         python -m unittest
 
         
