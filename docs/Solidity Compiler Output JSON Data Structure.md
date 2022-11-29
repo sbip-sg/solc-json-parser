@@ -39,6 +39,12 @@ pragma solidity 0.8.17;
 
 contract Storage {
     uint256 number;
+    address public owner;
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
 
     function store(uint256 num) public {
         number = num;
@@ -51,7 +57,7 @@ contract Storage {
 }
 ```
 
-From version 0.8.0 and above, some of the keys name changed. Most importantly, `children` becomes `nodes` and `name` becomes `nodeType`. In our code, put them in this way.
+From version 0.8.0 and above, some of the keys name changed. Most importantly, `children` becomes `nodes` and `name` becomes `nodeType`. In our code, put them in this way. In the following explanation, we will use `nodeType` and `nodes`for version 0.8.0 and above, and use `name` and `children` for versions below 0.8.0. 
 
 ```python
 import addict
@@ -86,9 +92,9 @@ We still use `solcx` to compile the file by `solcx.compile_source(self.source, o
 }
 ```
 
-The `nodes` or `children` here is the root node for the all contracts' AST in the .sol file. For the this 'root' node, we will a list of sub-nodes with nodeType **PragmaDirective(we will skip this because we don't care about it)** or **ContractDefinition(we get info from here)**. 
+The `nodes` or `children` here is the root node for the all contracts' AST in the .sol file. For the this 'root' node, we will a *list of sub-nodes* with nodeType **PragmaDirective(we will skip this because we don't care about it)** or **ContractDefinition(we get info from here)**. If there are more than one contract in one solidity file. The list of sub-nodes will contain multiple with type **ContractDefinition**. So we need to loop the list.
 
-Going into nodes with type ContractDefinition(we will use function `_process_contract` to process to node), we will get the following structure which contains some meta-data about a contract. We use function `_get_contract_meta_data` to get the following metadata `contract_id`, `contract_kind`, `is_abstract`, `contract_name`,  `base_contracts`,  `line_number_range`. 
+Going into nodes with type **ContractDefinition**(we will use function `_process_contract` to process to node), we will get the following structure which contains some meta-data about a contract. We use function `_get_contract_meta_data` to get the following metadata `contract_id`, `contract_kind`, `is_abstract`, `contract_name`,  `base_contracts`,  `line_number_range`. 
 
 ```json
 {
@@ -110,9 +116,9 @@ Going into nodes with type ContractDefinition(we will use function `_process_con
 }
 ```
 
-Contracts usually have functions, variables(we call fields) or modifiers. The key `nodes` above contains a **list** of sub-nodes, which can be **FunctionDefinition**, **VariableDeclaration** or **ModifierDefinition**. 
+Contracts usually have functions, variables(we call fields) or modifiers. The key `nodes` above contains a **list** of sub-nodes, which can be **FunctionDefinition**, **VariableDeclaration** or **ModifierDefinition**. We will call the list **$L$**.
 
-We first introduce **VariableDefinition**. This is already straightforward and we can get `visibility`, `name`,`line_number_range` here.
+We first introduce **VariableDefinition**. Looping through **$L$**, if $L_i['nodeType']$ equals "VariableDeclaration". Then $L_i$ is a VariableDefinition Node. Going into this node, we will have the following structure. This is already straightforward and we can get `visibility`, `name`,`line_number_range` here.
 
 ```json
 {
@@ -144,7 +150,23 @@ We first introduce **VariableDefinition**. This is already straightforward and w
 },
 ```
 
-Next is **FunctionDefinition**. We omit some of the keys here for simplicity. Most of the information can be directly obtained. To get the function signature and return type, we will go into `parameters` and `returnParameters` here. The structure is almost the same and we use function `_get_signature()` to handle both of them. Specifically, we want to get the parameter type, which is under "typeDescriptions"->"typeString" for version 0.8.0 and under "attributes"->"type" for version smaller than 0.8.0. 
+**ModifierDefinition** is very simple. Likewise, if if $L_i['nodeType']$ equals "ModifierDefinition". Then $L_i$ is a ModifierDefinition Node. For the moment, we are only interested in getting the **name** and **visibility** of modifiers, which can be easily obtained from the datastructure.
+
+```json
+{
+    "body": {...} // dict omitted here
+    "id": 17,
+    "name": "onlyOwner", // name of modifier
+    "nameLocation": "142:9:0",
+    "nodeType": "ModifierDefinition",
+    "parameters":	[...] // list omitted here
+    "src": "133:249:0",
+    "virtual": false,
+    "visibility": "internal" // visibility of modifier
+}
+```
+
+Next is **FunctionDefinition**. We omit some of the keys here for simplicity. Most of the information can be directly obtained. To get the function signature and return type, we will go into `parameters` and `returnParameters` here. The structure is almost the same and we use function `_get_signature()` to handle both of them. Specifically, we want to get the parameter type, which is under "typeDescriptions"->"typeString" for version 0.8.0 and under "attributes"->"type" for version smaller than 0.8.0, details will be shown later. 
 
 ```json
 {
@@ -167,7 +189,7 @@ Next is **FunctionDefinition**. We omit some of the keys here for simplicity. Mo
              		// a lot of keys are omitted here
                 "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
-                    "typeString": "uint256" // what we want
+                    "typeString": "uint256" // this is what we want
                 },
             		"visibility": "internal"
             }
@@ -184,23 +206,9 @@ Next is **FunctionDefinition**. We omit some of the keys here for simplicity. Mo
 },
 ```
 
-**ModifierDefinition** is very simple, we can understand the logic by just reading the python code.
-
-```python
-def _process_modifier(self, node: Dict) -> Modifier:
-    if self.version_key == "v8":
-    		pass
-    else:  # v4, v5, v6, v7
-    		node = node.get("attributes")
-    
-    visibility = node.get('visibility')
-    name = node.get('name')
-    return Modifier(visibility=visibility, name=name)
-```
-
 ### AST data structure before version 0.8.0
 
-The ast output structure of version 0.4.12-0.7.6 are very similar to each other, so they are put into the same catergory. 
+The ast output structure of version 0.4.12-0.7.6 are very similar to each other, so they are put into the same catergory. Notice here the `nodes` becomes to `children` and `nodeType` becomes `name`.
 
 ```json
 {
@@ -212,7 +220,7 @@ The ast output structure of version 0.4.12-0.7.6 are very similar to each other,
 }
 ```
 
-The children is the root node. Like what we do when processing version greater than 0.8.0, we go into this `children` node, and then into `ContractDefinition`. Different than 0.8.0, for lower versions, the metadata is store in "attributes", so we need to explicitly go into this node to get information.
+The children is the root node. Like what we do when processing version greater than 0.8.0, we go into this `children` node, and then into `ContractDefinition`. Different than 0.8.0, for lower versions, the metadata is store in node "attributes", so we need to explicitly go into this node to get information.
 
 ```python
     def _get_contract_meta_data(self, node: Dict) -> tuple:
@@ -245,33 +253,17 @@ The children is the root node. Like what we do when processing version greater t
 
 As we mentioned before, "children" means "nodes". In "children", we can find **FunctionDefinition**, **VariableDeclaration** or **ModifierDefinition**. 
 
-For **VariableDeclaration** and **ModifierDefinition**, we need to get some of the information by explicitly going into the "attributes" node.
+For **VariableDeclaration**, we need to get some of the information by explicitly going into the "attributes" node. A comparison is shown below. 
 
-```python
-    def _process_modifier(self, node: Dict) -> Modifier:
-        if self.version_key == "v8":
-            pass
-        else:  # v4, v5, v6, v7
-            node = node.get("attributes") # pay attention here
-        visibility = node.get('visibility')
-        name = node.get('name')
-        return Modifier(visibility=visibility, name=name)
-      
-    def _process_field(self, node: Dict) -> Field:
-        # omit some code before
-        if self.version_key == "v8":
-            pass
-        else:  # v4, v5, v6, v7
-            node = node.get("attributes") # pay attention here
-        visibility = node.get('visibility')
-        name = node.get('name')
-        inherited_from = ""
-        return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range)
-```
+![image-20221129105713296](./img/compare_variable.png)
 
-For **FunctionDefinition**, the datastructure is a little different. 
+For **ModifierDefinition**, we need to get some of the information by explicitly going into the "attributes" node. A comparison is shown below. 
 
-First, for function signature, for 0.8.0 and above, we can directly get the nodes. But for version lower than 0.8.0, we need to manually get them through looping.
+![image-20221129110225248](./img/compare_modifier.png)
+
+For **FunctionDefinition**, the datastructure is a little different. First, for function signature, for 0.8.0 and above, we can directly get the nodes. But for version lower than 0.8.0, we need to manually get them through looping. For version lower than 0.8.0, input parameters node and return parameters node both have type "ParameterList". The first one is input, the second one is output.
+
+A comparison is shown below. 
 
 ```python
 # for 0.8.0 and above
@@ -285,7 +277,9 @@ for i in range(len(node.get('children'))):
    			return_type = node.get('children')[i+1]
     		break
 ```
+![image-20221129110735730](./img/compare_param.png)
 
+A full sturcture of parameter node is shown below.
 ```json
 "children": [
   {
@@ -318,7 +312,7 @@ for i in range(len(node.get('children'))):
       }
     ],
     "id": 6,
-    "name": "ParameterList",
+    "name": "ParameterList", // first one is input param
     "src": "121:13:0"
   },
   {
@@ -329,7 +323,7 @@ for i in range(len(node.get('children'))):
     },
     "children": [],
     "id": 7,
-    "name": "ParameterList",
+    "name": "ParameterList", // second one is output param
     "src": "142:0:0"
   },
 ]
@@ -346,6 +340,10 @@ else:  # v4, v5, v6, v7
 				param_type_str += param['attributes']['type'] + ", "
 ```
 
+For metadata of a function, we still need to get some of the information by explicitly going into the "attributes" node. A comparison is shown below. 
+
+![image-20221129111459787](./img/compare_function.png)
+
 ## Unicode and Offset
 
 When processing functions, we get the raw code by this. Here the **encode** and **decode** operation are necessary. In python string, the default format is utf-8. In utf-8, © takes two bytes(C2 A9), normal characters such as $ takes one bytes(24) and chinese character 你 takes three bytes(E4 BD A0). The solidity compiler doesn't understand utf-8 and thinks © is two different characters, so if we don't decode it first, the offset is wrong.
@@ -354,3 +352,40 @@ When processing functions, we get the raw code by this. Here the **encode** and 
 raw = self.source.encode()[start: start+offset].decode()
 ```
 
+## How to extract information with python code
+### Extracting Field(Variable) and Modifier
+```python
+    def _process_modifier(self, node: Dict) -> Modifier:
+        if self.version_key == "v8":
+            pass
+        else:  # v4, v5, v6, v7
+            node = node.get("attributes") # pay attention here
+        visibility = node.get('visibility')
+        name = node.get('name')
+        return Modifier(visibility=visibility, name=name)
+      
+    def _process_field(self, node: Dict) -> Field:
+        # omit some code before
+        if self.version_key == "v8":
+            pass
+        else:  # v4, v5, v6, v7
+            node = node.get("attributes") # pay attention here
+        visibility = node.get('visibility')
+        name = node.get('name')
+        inherited_from = ""
+        return Field(inherited_from=inherited_from, visibility=visibility, 
+                     name=name, line_num=line_number_range)
+
+fields = []
+modifiers = []
+# assume we are already in Contract node.
+key_name = 'name'  # if lower than 0.8.0
+key_name = 'nodeType' # if higher than 0.8.0
+subnodes = contract_node['key_name'] 
+for sub_node in subnodes:
+  	if sub_node[key_name] == "VariableDeclaration":
+      	fields.append(self._process_field(node))
+    elif sub_node[key_name] == "ModifierDefinition":
+      	modifiers.append(self._process_modifier(node))
+    
+```
