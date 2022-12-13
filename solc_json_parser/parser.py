@@ -12,11 +12,11 @@ from typing import Collection, Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property, cache
 
 try:
-    from fields import Field, Function, ContractData, Modifier
+    from fields import Field, Function, ContractData, Modifier, Event
     from version_cfg import v_keys
     import consts
 except:
-    from solc_json_parser.fields import Field, Function, ContractData, Modifier
+    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event
     from solc_json_parser.version_cfg import v_keys
     import solc_json_parser.consts
 
@@ -222,24 +222,31 @@ class SolidityAst():
             base_contracts.append(base_contract['baseName']['referencedDeclaration'])
         return base_contracts
 
+    def get_raw_from_src(self, node):
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        start, offset = line_number_range_raw[0], line_number_range_raw[1]
+        raw = self.source.encode()[start: start+offset].decode()
+        return raw, line_number_range
+
+    def get_signature(self, function_name, parameters, kind='function') -> str:
+        if kind == 'fallback' or kind == 'receive':
+            return ''
+
+        signature = "" + function_name + "("
+        param_type_str = ""
+        if self.version_key == "v8":
+            for param in parameters['parameters']:
+                param_type_str += param['typeDescriptions']['typeString'] + ", "
+        else:  # v4, v5, v6, v7
+            for param in parameters['children']:
+                param_type_str += param['attributes']['type'] + ", "
+
+        param_type_str = param_type_str[:-2]  # remove the last ", "
+        signature += param_type_str + ")"
+        return signature
+
     def _process_function(self, node: Dict) -> Function:
-        def _get_signature(function_name, parameters, kind='function') -> str:
-            if kind == 'fallback' or kind == 'receive':
-                return ''
-
-            signature = "" + function_name + "("
-            param_type_str = ""
-            if self.version_key == "v8":
-                for param in parameters['parameters']:
-                    param_type_str += param['typeDescriptions']['typeString'] + ", "
-            else:  # v4, v5, v6, v7
-                for param in parameters['children']:
-                    param_type_str += param['attributes']['type'] + ", "
-
-            param_type_str = param_type_str[:-2] # remove the last ", "
-            signature += param_type_str + ")"
-            return signature
-
         def _get_modifiers(node: Dict) -> List[str]:
             modifiers = []
             if self.version_key == "v8":
@@ -257,11 +264,7 @@ class SolidityAst():
             return modifiers
 
         # line number range is the same for all versions
-        line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
-        start, offset = line_number_range_raw[0], line_number_range_raw[1]
-        raw = self.source.encode()[start: start+offset].decode()
-
+        raw, line_number_range = self.get_raw_from_src(node)
         if self.version_key == "v8":
             parameters = node.get('parameters')
             return_type = node.get('returnParameters')
@@ -302,8 +305,8 @@ class SolidityAst():
         func_kind = node.get('kind')
         state_mutability = node.get('stateMutability')
 
-        signature = _get_signature(name, parameters, func_kind)
-        return_signature = _get_signature("", return_type, func_kind)
+        signature = self.get_signature(name, parameters, func_kind)
+        return_signature = self.get_signature("", return_type, func_kind)
         return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
                         signature=signature, name=name, return_signature=return_signature, kind=func_kind,
                         modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
@@ -336,6 +339,24 @@ class SolidityAst():
         name = node.get('name')
         inherited_from = ""
         return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range)
+
+    def _process_event(self, node: Dict) -> Event:
+        raw, line_number_range = self.get_raw_from_src(node)
+        if self.version_key == "v8":
+            parameters = node.get('parameters')
+        else:  # v4, v5, v6, v7
+            parameters = None
+            for i in range(len(node.get('children'))):
+                if node.get('children')[i].get('name') == "ParameterList":
+                    parameters = node.get('children')[i]
+                    break
+            node = node.get("attributes")
+
+        name = node.get('name')
+        anonymous = node.get('anonymous')
+
+        signature = self.get_signature(name, parameters, "event")
+        return Event(raw=raw, name=name, anonymous=anonymous, line_num=line_number_range, signature=signature)
 
     def _process_modifier(self, node: Dict) -> Modifier:
         if self.version_key == "v8":
@@ -381,6 +402,7 @@ class SolidityAst():
         functions = []
         fields = []
         modifiers = []
+        events = []
         keys = self.keys
         for node in node.get(keys.children):
             if node[keys.name] == "FunctionDefinition":
@@ -389,11 +411,13 @@ class SolidityAst():
                 fields.append(self._process_field(node))
             elif node[keys.name] == "ModifierDefinition":
                 modifiers.append(self._process_modifier(node))
+            elif node[keys.name] == "EventDefinition":
+                events.append(self._process_event(node))
             else:
                 # not implemented for other types
                 pass
 
-        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id)
+        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id, events)
 
     def _parse(self) -> Dict:
         def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
@@ -411,7 +435,7 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("Storage_solc_ast_no_abstractBugC")
+        # self.save_solc_ast_json("event")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -566,6 +590,7 @@ class SolidityAst():
                               name_only: bool = False,
                               function_visibility: Optional[frozenset] = None,
                               check_base_contract=True) -> List[Function]:
+        # filter and return all functions for a given contract object of type `ContractData`
 
         # by default, base contract's functions are included
         # different from fields, we don't check parent function visibility
@@ -584,15 +609,7 @@ class SolidityAst():
                                       name_only: bool = False,
                                       function_visibility: Optional[frozenset] = None,
                                       check_base_contract=True) -> List[Any]:
-        # fns = self.contract_by_name(contract_name).functions
-        # if check_base_contract:
-        #     pass # do nothing
-        # else:
-        #     fns = [fn for fn in fns if fn.inherited_from == '']
-        #
-        # if name_only:
-        #     return [fn.name for fn in fns]
-
+        # return all functions for a given "contract name"(str)
         contract = self.contract_by_name(contract_name)
         return self.functions_in_contract(contract, name_only, function_visibility, check_base_contract)
 
@@ -604,9 +621,28 @@ class SolidityAst():
         return fns
 
     def function_by_name(self, contract_name: str, function_name: str) -> Function:
+        """return a function for a given "contract name"(str) and "function name"(str)"""
         contract = self.contract_by_name(contract_name)
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
+
+    def events_in_contract(self, contract: ContractData, name_only: bool = False) -> List[Event]:
+        """return all events for a given contract object of type `ContractData`"""
+        events = contract.events
+        if name_only:
+            return [n.name for n in events]
+        return events
+
+    def events_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
+        """return all events for a given "contract name"(str)"""
+        contract = self.contract_by_name(contract_name)
+        return self.events_in_contract(contract, name_only)
+
+    def event_by_name(self, contract_name: str, event_name: str) -> Event:
+        """return an event for a given "contract name"(str) and "event name"(str)"""
+        contract = self.contract_by_name(contract_name)
+        events    = self.events_in_contract(contract)
+        return next(ev for ev in events if ev.name == event_name)
 
     def all_libraries(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.kind == "library"]
