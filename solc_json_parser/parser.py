@@ -180,7 +180,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, optimize=False):
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
@@ -191,6 +191,7 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
+        self.optimize = optimize
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
@@ -463,7 +464,7 @@ class SolidityAst():
             if self.root_path:
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
-            out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version)
+            out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version, optimize=self.optimize)
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
             if self.retry_num > 0:
@@ -756,7 +757,7 @@ class SolidityAst():
         if source_index is not None and source_list:
             return source_list[source_index]
         return None
-    
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
