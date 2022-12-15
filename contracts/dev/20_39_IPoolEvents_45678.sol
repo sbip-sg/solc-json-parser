@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-pragma solidity ^0.8.0;
+pragma solidity >=0.4.23;
 
 interface IPoolEvents {
     event Purchase(
@@ -84,4 +84,8 @@ interface IPoolEvents {
     event UpdateSteepness(int128 steepness64x64, bool isCallPool);
 
     event UpdateSpotOffset(int128 spotOffset64x64);
+
+    event BeforeTokenTransfer();
+
+    event implicitType(uint amount);
 }

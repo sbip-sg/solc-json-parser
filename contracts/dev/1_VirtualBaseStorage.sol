@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity >=0.4.23;
 
 abstract contract BaseStorage {
     uint256 some;
