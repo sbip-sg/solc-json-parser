@@ -10,6 +10,7 @@ import os
 import re
 from typing import Collection, Dict, Optional, List, Iterable, Any, Tuple, Union
 from functools import cached_property, cache
+from Crypto.Hash import keccak
 
 try:
     from fields import Field, Function, ContractData, Modifier
@@ -46,6 +47,10 @@ DEPLOY_START_OPCODES = [
     ],
 ]
 
+def keccak256(s: str) -> str:
+    k = keccak.new(digest_bits=256)
+    k.update(s.encode())
+    return k.hexdigest()
 
 def get_by_index(lst: Union[List, Tuple], idx: int):
     '''Get by index from a list, returns None if the index is out of range '''
@@ -797,8 +802,13 @@ class SolidityAst():
     def get_compiled_data(self, *keys) -> Optional[Any]:
         return get_in(self.solc_json_ast, *keys)
 
-    def get_deploy_bin(self, contract_name: str) -> Optional[str]:
+    def get_deploy_bin_by_contract_name(self, contract_name: str) -> Optional[str]:
         return get_in(self.solc_json_ast, contract_name, 'bin')
+
+    def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
+        '''Get deployment binary by hash of fully qualified contract / library name'''
+        full_name = next(full_name for full_name in self.original_compilation_output.keys() if keccak256(full_name)[:34] == hsh)
+        return get_in(self.original_compilation_output, full_name, 'bin')
 
 
 if __name__ == '__main__':
