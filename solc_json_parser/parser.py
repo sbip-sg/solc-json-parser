@@ -8,7 +8,7 @@ import solcx
 import json
 import os
 import re
-from typing import Collection, Dict, Optional, List, Any, Tuple, Union
+from typing import Collection, Dict, Optional, List, Iterable, Any, Tuple, Union
 from functools import cached_property, cache
 
 try:
@@ -191,6 +191,7 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
+        self.original_compilation_output :Optional[Dict] = None
         self.solc_options = solc_options
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
@@ -465,6 +466,7 @@ class SolidityAst():
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
             out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version, **self.solc_options)
+            self.original_compilation_output = out
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
             if self.retry_num > 0:
@@ -475,7 +477,6 @@ class SolidityAst():
                 raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
         finally:
             os.chdir(current_working_dir)
-
 
 
     def save_solc_ast_json(self, name: str):
@@ -792,6 +793,12 @@ class SolidityAst():
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
         return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
+
+    def get_compiled_data(self, *keys) -> Optional[Any]:
+        return get_in(self.solc_json_ast, *keys)
+
+    def get_deploy_bin(self, contract_name: str) -> Optional[str]:
+        return get_in(self.solc_json_ast, contract_name, 'bin')
 
 
 if __name__ == '__main__':
