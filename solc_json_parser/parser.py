@@ -8,7 +8,7 @@ import solcx
 import json
 import os
 import re
-from typing import Collection, Dict, Optional, List, Iterable, Any, Tuple, Union
+from typing import Collection, Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property, cache
 from Crypto.Hash import keccak
 
@@ -798,9 +798,6 @@ class SolidityAst():
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
         return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
-
-    def get_compiled_data(self, *keys) -> Optional[Any]:
-        return get_in(self.solc_json_ast, *keys)
 
     def get_deploy_bin_by_contract_name(self, contract_name: str) -> Optional[str]:
         return get_in(self.solc_json_ast, contract_name, 'bin')
