@@ -18,5 +18,5 @@ ast.functions_in_contract_by_name('BlackScholesEstimate', name_only=True)
 ast.source_by_pc('BlackScholesEstimate', 92)
 
 # Get deployment code by contract name
-ast.get_deploy_bin('BlackScholesEstimate')
+ast.get_deploy_bin_by_contract_name('BlackScholesEstimate')
 ```
