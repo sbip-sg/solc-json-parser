@@ -280,7 +280,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
 
     def test_program_counter(self):
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', allow_paths="")
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', solc_options={'allow_paths': ""})
         x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
         # print(x)
 
@@ -354,11 +354,12 @@ class TestParser(unittest.TestCase):
             self.assertEqual(func1.raw, func2.raw)
 
         for v in ['0.6.0', '0.7.0', '0.8.7']:
-            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v, allow_paths=f'')
+            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v, 
+                              solc_options={'allow_paths': f''})
             sub_test(ast)
 
         for v in ['0.8.8', '0.8.12', '0.8.15', '0.8.17']:
             ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
-                              base_path=f'{contracts_root}', allow_paths=f'')
+                              solc_options={'allow_paths': f'', 'base_path': f'{contracts_root}'})
             sub_test(ast)
 
