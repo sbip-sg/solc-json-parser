@@ -799,13 +799,20 @@ class SolidityAst():
                     source_as_bytes[:end].decode().count('\n') + 1)
         return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
 
+    def get_any(self, *keys) -> Any:
+        '''Get any value by keys from the original compiled ast data'''
+        return get_in(self.original_compilation_output, *keys)
+
     def get_deploy_bin_by_contract_name(self, contract_name: str) -> Optional[str]:
         return get_in(self.solc_json_ast, contract_name, 'bin')
 
+    def qualified_name_from_hash(self, hsh: str)->str:
+        '''Get fully qualified contract name from 34 character hash'''
+        return next(full_name for full_name in self.original_compilation_output.keys() if keccak256(full_name)[:34] == hsh)
+
     def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
         '''Get deployment binary by hash of fully qualified contract / library name'''
-        full_name = next(full_name for full_name in self.original_compilation_output.keys() if keccak256(full_name)[:34] == hsh)
-        return get_in(self.original_compilation_output, full_name, 'bin')
+        return self.get_any(self.qualified_name_from_hash(hsh), 'bin')
 
 
 if __name__ == '__main__':

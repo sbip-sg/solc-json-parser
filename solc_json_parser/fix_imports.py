@@ -3,89 +3,72 @@
 
 import re
 import os
-from typing import Optional, Set
+import shutil
 
-# 4 kinds of import directives as regex
-# use this to extract the `path` or `unit name`
-RE_IMPORT_SIMPLE = re.compile(r'''import\s+['"](.*\.sol)['"];''')
-RE_IMPORT_AS = re.compile(r'''import\s+['"](.*\.sol)['"]\s+as\s+\w+;''')
-RE_IMPORT_AS_FROM = re.compile(r'''import\s+.*\s+as\s+.*\s+from\s+['"](.*\.sol)['"];''')
-RE_IMPORT_FROM = re.compile(r'''import\s+.*\s+from\s+['"](.*\.sol)['"];''')
-
-# When searching for candidate matching a contract in source code,
-# this allows a prefix in the candidate contract file names
-RE_ALLOWED_FILE_PREFIX = re.compile(r'^\d+_\d+_(.*\.sol)$')
-
-def search_sol_by_filename(name: str, candidates: Set[str]) -> str:
-    if name in candidates:
-        return name
-
-    for f in candidates:
-        found = RE_ALLOWED_FILE_PREFIX.findall(f)
-        
-        if found and found[0] == name:
-            return f
-
-    raise Exception(f'No candidate contract found for {name}')
-
-def sol_in_line(line: str) -> Optional[str]:
-    '''
-    Extract the relative path or the unit name from an `import` directive
-    '''
-    line = line.strip();
-    found = RE_IMPORT_AS.findall(line) \
-        or RE_IMPORT_AS_FROM.findall(line) \
-        or RE_IMPORT_SIMPLE.findall(line) \
-        or RE_IMPORT_FROM.findall(line)
-
-    if len(found) > 0:
-        return found[0]
+def search_sol_in_lib_with_copying(cwd: str, file_name: str, lib_sol: str):
+    if lib_sol.startswith('@'):
+        lib = f'node_modules/{lib_sol}'
+        if os.path.exists(lib):
+            target = f'{cwd}/{file_name}'
+            if not os.path.exists(target):
+                shutil.copyfile(lib, target)
+            return file_name
     return None
 
-def to_simple_name(path: str)-> str:
-    '''
-    Returns a filename by removing any path prefixes
-    '''
-    return path.split(r'/')[-1]
 
-def fix_import_line(line: str, candidates: Set[str]) -> str:
-    sol = sol_in_line(line)
-    replacement =  search_sol_by_filename(to_simple_name(sol), candidates) if sol else None
+def search_sol_in_lib(cwd: str, lib_sol: str):
+    if lib_sol.startswith('@'):
+        lib = f'node_modules/{lib_sol}'
+        if os.path.exists(lib):
+            p = os.path.relpath(lib, cwd)
+            return p
+    return None
 
-    if replacement:
-        nline = line.replace(sol, f'./{replacement}')
-        # print(f'{line} -> {nline}')
-        return nline
+def search_sol_by_filename(cwd, name, complete_sol, sols):
+    file_name = lambda p: p.split(os.path.sep)[-1]
+
+
+    for f in sols:
+        fname = file_name(f)
+        if name in [fname, fname[6:]]:
+            return fname
+
+    return search_sol_in_lib(cwd, complete_sol)
+
+def fix_import_line(f, line, sols):
+    # match = re.search(r'''['"].*/(\w+\.sol)['"];''', line)
+    match = re.search(r'''["'](.*\.sol)["']''', line)
+    cwd = os.path.dirname(f)
+    if match:
+        complete_sol = match.group(1)
+        sol = complete_sol.split('/')[-1]
+        replacement = search_sol_by_filename(cwd, sol, complete_sol, sols)
+        if replacement:
+            nline = f'import "./{replacement}";\n'
+            # print(f'{line} -> {nline}')
+            return nline
 
     return line
 
 
-def fix_import(sol, candidates):
+def fix_import(sol, sols):
     lines = []
     with open(sol, 'r') as f:
         lines = list(f.readlines())
 
-    updated_lines = [fix_import_line(line, candidates) for line in lines]
+    updated_lines = [fix_import_line(sol, line, sols) for line in lines]
     if lines != updated_lines:
         with open(sol, 'w') as f:
             f.write(''.join(updated_lines))
-
-
-def fix_imports_inplace(root: str):
-    sols =  [os.path.join(root, f) for f in os.listdir(root) if f.endswith('.sol')]
-    candidates = set([p.split(os.path.sep)[-1] for p in sols])
-    if len(candidates) != len(sols):
-        raise Exception('Duplicate file names found in folder, we can not handle this case yet!')
-
-    for f in sols:
-        fix_import(f, candidates)
 
 
 
 if __name__ == '__main__':
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", type=str, help="Root directory of a single solidity project", required=True)
+    ap.add_argument("--root", type=str, help="Root directory of a single solidity project")
     args = ap.parse_args()
     root = args.root
-    fix_imports_inplace(root)
+    sols =  [os.path.join(root, f) for f in os.listdir(root) if f.endswith('.sol')]
+    for f in sols:
+        fix_import(f, sols)
