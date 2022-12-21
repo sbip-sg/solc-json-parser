@@ -1,6 +1,6 @@
 # An AST parser for solc json outputs
 
-## Usage 
+## Usage
 
 Parsing AST with solidity source code and get contract information:
 
@@ -16,5 +16,7 @@ ast.functions_in_contract_by_name('BlackScholesEstimate', name_only=True)
 
 # Get source code by program counter
 ast.source_by_pc('BlackScholesEstimate', 92)
-```
 
+# Get deployment code by contract name
+ast.get_deploy_bin_by_contract_name('BlackScholesEstimate')
+```
