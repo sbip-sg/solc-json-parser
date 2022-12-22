@@ -199,10 +199,10 @@ class SolidityAst():
 
         self.original_compilation_output :Optional[Dict] = None
         self.solc_options = solc_options
-        self.import_remappings = solc_options.get('import_remappings', None)
-        base_path = solc_options.get('base_path', None)
+        self.import_remappings = solc_options.get('import_remappings')
+        base_path = solc_options.get('base_path')
         self.base_path = os.path.abspath(base_path) if base_path else None
-        self.allow_paths = solc_options.get('allow_paths', None)
+        self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
@@ -775,7 +775,6 @@ class SolidityAst():
     @cache
     def get_source_list(self):
         source_list = []
-        # ordered_dict
         idx2path = {}
         for contract_name in self.solc_json_ast.keys():
             absolute_path = self.source_path_by_contract(contract_name)
