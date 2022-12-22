@@ -13,11 +13,11 @@ from functools import cached_property, cache
 from Crypto.Hash import keccak
 
 try:
-    from fields import Field, Function, ContractData, Modifier
+    from fields import Field, Function, ContractData, Modifier, Event
     from version_cfg import v_keys
     import consts
 except:
-    from solc_json_parser.fields import Field, Function, ContractData, Modifier
+    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event
     from solc_json_parser.version_cfg import v_keys
     import solc_json_parser.consts
 
@@ -86,6 +86,7 @@ def get_candidates():
         INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
         return INSTALLABLE_VERSION
 
+
 def select_available_version(version_str: str, install=False) -> Optional[str]:
     '''Switch to current or the next semantic version available to use. Returns the version selected.'''
     version = Version(version_str)
@@ -104,6 +105,7 @@ def select_available_version(version_str: str, install=False) -> Optional[str]:
 
     return ver
 
+
 def version_str_from_line(line) -> Optional[str]:
     '''
     Extract solc version string from input line
@@ -113,6 +115,7 @@ def version_str_from_line(line) -> Optional[str]:
         ver = re.sub(r'([\^>=<~]+)\s+', r'\1', ver)
         return re.sub(r'(\.0+)', '.0', ver)
     return None
+
 
 def version_str_from_source(source_or_source_file: str) -> Optional[str]:
     inputs = source_or_source_file.split('\n') if '\n' in source_or_source_file else open(source_or_source_file, 'r')
@@ -145,19 +148,14 @@ def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     return str(next(spec.filter(candidates)))
 
 
-def get_line_number_range(start_index:int, offset:int, source_code:str):
-    start_line = source_code[:start_index].count('\n') + 1
-    end_line   = start_line + source_code[start_index:start_index + offset].count('\n')
-    return start_line, end_line
-
 def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
+
 def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
-
 
 
 def get_increased_version(current_version: str) -> str:
@@ -190,14 +188,21 @@ class SolidityAst():
             self.source = contract_source_path
             self.file_path = None
             self.root_path = None
+            self.compile_type = 'source'
         else:
+            self.compile_type = 'file'
             self.file_path = contract_source_path
-            self.root_path = os.path.dirname(self.file_path)
+            self.file_path = os.path.abspath(contract_source_path)
+            self.root_path = os.path.dirname(contract_source_path)
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
         self.original_compilation_output :Optional[Dict] = None
         self.solc_options = solc_options
+        self.import_remappings = solc_options.get('import_remappings')
+        base_path = solc_options.get('base_path')
+        self.base_path = os.path.abspath(base_path) if base_path else None
+        self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
         self.version_key: str     = self._get_version_key()
@@ -229,27 +234,34 @@ class SolidityAst():
             base_contracts.append(base_contract['baseName']['referencedDeclaration'])
         return base_contracts
 
+    def get_raw_from_src(self, node):
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        start, offset, source_file_idx = line_number_range_raw
+        line_number_range, source = self.get_line_number_range_and_source(line_number_range_raw)
+        raw = source.encode()[start: start+offset].decode()
+        return raw, line_number_range
+
+    def get_signature(self, function_name, parameters, kind='function') -> str:
+        if kind in ['function', 'constructor']:
+            return ''
+
+        signature = "" + function_name + "("
+        param_type_str = ""
+        if self.v8:
+            for param in parameters['parameters']:
+                param_type_str += param['typeDescriptions']['typeString'] + ", "
+        else:  # v4, v5, v6, v7
+            for param in parameters['children']:
+                param_type_str += param['attributes']['type'] + ", "
+
+        param_type_str = param_type_str[:-2]  # remove the last ", "
+        signature += param_type_str + ")"
+        return signature
+
     def _process_function(self, node: Dict) -> Function:
-        def _get_signature(function_name, parameters, kind='function') -> str:
-            if kind == 'fallback' or kind == 'receive':
-                return ''
-
-            signature = "" + function_name + "("
-            param_type_str = ""
-            if self.version_key == "v8":
-                for param in parameters['parameters']:
-                    param_type_str += param['typeDescriptions']['typeString'] + ", "
-            else:  # v4, v5, v6, v7
-                for param in parameters['children']:
-                    param_type_str += param['attributes']['type'] + ", "
-
-            param_type_str = param_type_str[:-2] # remove the last ", "
-            signature += param_type_str + ")"
-            return signature
-
         def _get_modifiers(node: Dict) -> List[str]:
             modifiers = []
-            if self.version_key == "v8":
+            if self.v8:
                 for modifier in node['modifiers']:
                     modifiers.append(modifier['modifierName']['name'])
                 return modifiers
@@ -264,12 +276,8 @@ class SolidityAst():
             return modifiers
 
         # line number range is the same for all versions
-        line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
-        start, offset = line_number_range_raw[0], line_number_range_raw[1]
-        raw = self.source.encode()[start: start+offset].decode()
-
-        if self.version_key == "v8":
+        raw, line_number_range = self.get_raw_from_src(node)
+        if self.v8:
             parameters = node.get('parameters')
             return_type = node.get('returnParameters')
             modifier_nodes = node
@@ -288,7 +296,6 @@ class SolidityAst():
                 modifier_nodes = {"modifiers": []}
             node = node.get("attributes") # get attributes, the structure is different
 
-
         assert parameters  is not None
         assert return_type is not None
         visibility = node.get('visibility')
@@ -306,17 +313,16 @@ class SolidityAst():
         inherited_from = ""
         abstract  = not node.get('implemented')
         modifiers = _get_modifiers(modifier_nodes)
-        func_kind = node.get('kind')
+        kind = node.get('kind')
         state_mutability = node.get('stateMutability')
 
-        signature = _get_signature(name, parameters, func_kind)
-        return_signature = _get_signature("", return_type, func_kind)
+        signature = self.get_signature(name, parameters, kind)
+        return_signature = self.get_signature("", return_type, kind)
         return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
-                        signature=signature, name=name, return_signature=return_signature, kind=func_kind,
+                        signature=signature, name=name, return_signature=return_signature, kind=kind,
                         modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
 
-
-    def get_yul_lines(self, contract_name: str, deploy: bool)->List[str]:
+    def get_yul_lines(self, contract_name: str, deploy: bool) -> List[str]:
         if not self.v8:
             return []
 
@@ -325,7 +331,6 @@ class SolidityAst():
         else:
             return self.solc_json_ast.get(contract_name).get('generated-sources-runtime')[0]['contents'].split("\n")
 
-
     @cached_property
     def v8(self):
         return self.version_key == "v8"
@@ -333,9 +338,9 @@ class SolidityAst():
     def _process_field(self, node: Dict) -> Field:
         # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        line_number_range, _ = self.get_line_number_range_and_source(line_number_range_raw)
 
-        if self.version_key == "v8":
+        if self.v8:
             pass
         else:  # v4, v5, v6, v7
             node = node.get("attributes")
@@ -344,8 +349,26 @@ class SolidityAst():
         inherited_from = ""
         return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range)
 
+    def _process_event(self, node: Dict) -> Event:
+        raw, line_number_range = self.get_raw_from_src(node)
+        if self.v8:
+            parameters = node.get('parameters')
+        else:  # v4, v5, v6, v7
+            parameters = None
+            for i in range(len(node.get('children'))):
+                if node.get('children')[i].get('name') == "ParameterList":
+                    parameters = node.get('children')[i]
+                    break
+            node = node.get("attributes")
+
+        name = node.get('name')
+        anonymous = node.get('anonymous')
+
+        signature = self.get_signature(name, parameters, "event")
+        return Event(raw=raw, name=name, anonymous=anonymous, line_num=line_number_range, signature=signature)
+
     def _process_modifier(self, node: Dict) -> Modifier:
-        if self.version_key == "v8":
+        if self.v8:
             pass
         else:  # v4, v5, v6, v7
             node = node.get("attributes")
@@ -356,10 +379,10 @@ class SolidityAst():
     def _get_contract_meta_data(self, node: Dict) -> tuple:
         # line number range is the same for all versions
         line_number_range_raw = list(map(int, node.get('src').split(':')))
-        line_number_range = get_line_number_range(start_index=line_number_range_raw[0], offset=line_number_range_raw[1], source_code=self.source)
+        line_number_range, _ = self.get_line_number_range_and_source(line_number_range_raw)
         contract_id = node.get('id')
 
-        if self.version_key == "v8":
+        if self.v8:
             pass  # do nothing
         else:  # v4, v5, v6, v7
             node = node.get("attributes")
@@ -388,6 +411,7 @@ class SolidityAst():
         functions = []
         fields = []
         modifiers = []
+        events = []
         keys = self.keys
         for node in node.get(keys.children):
             if node[keys.name] == "FunctionDefinition":
@@ -396,11 +420,13 @@ class SolidityAst():
                 fields.append(self._process_field(node))
             elif node[keys.name] == "ModifierDefinition":
                 modifiers.append(self._process_modifier(node))
+            elif node[keys.name] == "EventDefinition":
+                events.append(self._process_event(node))
             else:
                 # not implemented for other types
                 pass
 
-        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id)
+        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id, events)
 
     def _parse(self) -> Dict:
         def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
@@ -418,7 +444,7 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("Storage_solc_ast_no_abstractBugC")
+        # self.save_solc_ast_json("multi_file5.0")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -462,7 +488,6 @@ class SolidityAst():
             return None
 
     def compile(self):
-        # print("downloading compiler, version: ", self.exact_version)
         current_working_dir = os.getcwd()
         try:
             solcx.install_solc(self.exact_version)
@@ -470,7 +495,22 @@ class SolidityAst():
             if self.root_path:
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
-            out = solcx.compile_source(self.source, output_values=self.solc_compile_outputs, solc_version=self.exact_version, **self.solc_options)
+            if self.compile_type == "file":
+                out = solcx.compile_files(self.file_path,
+                                          base_path=self.base_path,
+                                          allow_paths=self.allow_paths,
+                                          import_remappings=self.import_remappings,
+                                          output_values=self.solc_compile_outputs,
+                                          solc_version=self.exact_version,
+                                          )
+            else:
+                out = solcx.compile_source(self.source,
+                                           base_path=self.base_path,
+                                           allow_paths=self.allow_paths,
+                                           import_remappings=self.import_remappings,
+                                           output_values=self.solc_compile_outputs,
+                                           solc_version=self.exact_version,
+                                           )
             self.original_compilation_output = out
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
@@ -483,7 +523,6 @@ class SolidityAst():
         finally:
             os.chdir(current_working_dir)
 
-
     def save_solc_ast_json(self, name: str):
         with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
             json.dump(self.solc_json_ast, f, indent=4)
@@ -491,7 +530,6 @@ class SolidityAst():
     def save_parsed_info_json(self, name: str):
         with open(f'{PARSED_JSON}/{name}.json', 'w') as f:
             json.dump(self.contracts_dict, f, default=lambda obj: obj.__dict__, indent=4)
-
 
     def all_contracts(self) -> List[ContractData]:
         # dict to list
@@ -572,7 +610,8 @@ class SolidityAst():
     def functions_in_contract(self, contract: ContractData,
                               name_only: bool = False,
                               function_visibility: Optional[frozenset] = None,
-                              check_base_contract=True) -> List[Function]:
+                              check_base_contract=True) -> List[Union[Function, str]]:
+        # filter and return all functions for a given contract object of type `ContractData`
 
         # by default, base contract's functions are included
         # different from fields, we don't check parent function visibility
@@ -591,15 +630,7 @@ class SolidityAst():
                                       name_only: bool = False,
                                       function_visibility: Optional[frozenset] = None,
                                       check_base_contract=True) -> List[Any]:
-        # fns = self.contract_by_name(contract_name).functions
-        # if check_base_contract:
-        #     pass # do nothing
-        # else:
-        #     fns = [fn for fn in fns if fn.inherited_from == '']
-        #
-        # if name_only:
-        #     return [fn.name for fn in fns]
-
+        # return all functions for a given "contract name"(str)
         contract = self.contract_by_name(contract_name)
         return self.functions_in_contract(contract, name_only, function_visibility, check_base_contract)
 
@@ -611,9 +642,28 @@ class SolidityAst():
         return fns
 
     def function_by_name(self, contract_name: str, function_name: str) -> Function:
+        """return a function for a given "contract name"(str) and "function name"(str)"""
         contract = self.contract_by_name(contract_name)
         funcs    = self.functions_in_contract(contract)
         return next(fn for fn in funcs if fn.name == function_name)
+
+    def events_in_contract(self, contract: ContractData, name_only: bool = False) -> List[Union[str, Event]]:
+        """return all events for a given contract object of type `ContractData`"""
+        events = contract.events
+        if name_only:
+            return [n.name for n in events]
+        return events
+
+    def events_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
+        """return all events for a given "contract name"(str)"""
+        contract = self.contract_by_name(contract_name)
+        return self.events_in_contract(contract, name_only)
+
+    def event_by_name(self, contract_name: str, event_name: str) -> Event:
+        """return an event for a given "contract name"(str) and "event name"(str)"""
+        contract = self.contract_by_name(contract_name)
+        events    = self.events_in_contract(contract)
+        return next(ev for ev in events if ev.name == event_name)
 
     def all_libraries(self) -> List[ContractData]:
         return [contract for contract in self.all_contracts() if contract.kind == "library"]
@@ -643,7 +693,6 @@ class SolidityAst():
             return opcodes[offset - len(deploy_start_sequence) + 1:]
         return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
 
-
     @staticmethod
     def __record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int]) -> set[int]:
         if opcode == 'JUMPI':
@@ -666,10 +715,7 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
-        if self.v8:
-            source_list = contract.get('asm').get('sourceList')
-        else:
-            source_list = [f"{key_name}.sol" for key_name in combined_json.keys()]
+        source_list = self.get_source_list()
 
         if not deploy:
             opcodes = SolidityAst.__skip_deploys(opcodes)
@@ -726,10 +772,36 @@ class SolidityAst():
         pc2idx = {v: k for k, v in idx2pc.items()}
         return dict(code=code, pc2idx=pc2idx, source_list=source_list, seen_targets=seen_targets)
 
+    @cache
+    def get_source_list(self):
+        source_list = []
+        idx2path = {}
+        for contract_name in self.solc_json_ast.keys():
+            absolute_path = self.source_path_by_contract(contract_name)
+            idx = get_in(self.solc_json_ast, contract_name, 'ast', 'src').split(':')[-1]
+            idx2path[int(idx)] = absolute_path
+        sort_keys = sorted(idx2path.keys())
+        for idx in sort_keys:
+            source_list.append(idx2path[idx])
+        return source_list
+
+    def get_line_number_range_and_source(self, line_number_range_raw: list):
+        start_index, offset, source_file_idx = line_number_range_raw
+        source_list = self.get_source_list()
+        source_path = self.__source_path_from_source_list(source_list, source_file_idx)
+        source_code = self.__source_code_from_source_path(source_path)
+        start_line = source_code[:start_index].count('\n') + 1
+        end_line = start_line + source_code[start_index:start_index + offset].count('\n')
+        return (start_line, end_line), source_code
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
-        path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
-        return None if (not path) or path == '<stdin>' else os.path.join(self.root_path, path)
+        path = None
+        if self.v8:
+            path = get_in(self.solc_json_ast, contract_name, 'ast', 'absolutePath')
+        else:
+            path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
+        base_path = self.base_path or self.root_path
+        return None if (not path) or path == '<stdin>' else os.path.join(base_path, path)
 
     def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
         '''Get source code by contract name and line numbers, line numbers are zero indexed'''
@@ -756,14 +828,23 @@ class SolidityAst():
 
     def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
         all_pcs = self.all_pcs(contract_name)
-        return len(set(pcs)) /  len(all_pcs) * 100 if all_pcs else 0
-
+        return len(set(pcs)) / len(all_pcs) * 100 if all_pcs else 0
 
     def __source_path_from_source_list(self, source_list: Optional[List[str]], source_index: Optional[int]) -> Optional[str]:
         if source_index is not None and source_list:
             return source_list[source_index]
         return None
 
+    def __source_code_from_source_path(self, source_path):
+        base_path = self.base_path or self.root_path
+        if base_path and source_path and source_path != '<stdin>':
+            source_path = os.path.join(base_path, source_path)
+            with open(source_path, 'r') as f:
+                source_code = f.read()
+        else:
+            source_code = self.source
+        return source_code
+    
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
@@ -775,19 +856,16 @@ class SolidityAst():
 
         begin, end = itemgetter('begin', 'end')(part)
         source_idx = part.get('source')
+        source_idx = source_idx if source_idx is not None else list(self.solc_json_ast.keys()).index(contract_name)
         source_path = self.__source_path_from_source_list(source_list, source_idx)
-        if self.root_path and source_path and source_path != '<stdin>':
-            source_path = os.path.join(self.root_path, source_path)
-            with open(source_path, 'r') as f:
-                source_code = f.read()
-        else:
-            source_code = self.source
+        source_code = self.__source_code_from_source_path(source_path)
 
         source = get_in(part, 'source') or 0 # WARN: assuming yul source is has index 1, not true for multi-source file contract
-
-        if source == 1 and self.v8 and not deploy:
+        source = source_idx
+        yul_index = len(source_list) - 1
+        if source == yul_index and self.v8 and not deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
-        elif source == 1 and self.v8 and deploy:
+        elif source == yul_index and self.v8 and deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources'][0]['contents']
         else:
             combined_source = source_code

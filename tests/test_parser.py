@@ -2,6 +2,7 @@ import unittest
 from solc_json_parser.parser import SolidityAst, SolidityAstError
 contracts_root = './contracts'
 
+
 class TestParser(unittest.TestCase):
     FIELD_VISIBILITY_ALL = frozenset(
         ('default', 'internal', 'public', 'private'))
@@ -23,14 +24,13 @@ class TestParser(unittest.TestCase):
         expected_contract_names = {'A', 'B', 'C'}
         all_contract_names = set(ast.all_contract_names)
         self.assertEqual(expected_contract_names, all_contract_names, 'Contracts should be identified correctly')
-        
-        
+
     def test_base_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_base_contract_names = {'A'}
         base_contract_names = set(ast.base_contract_names)
         self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
-        
+
     def test_pruned_contract_names(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
         expected_pruned_contract_names = {'B', 'C'}
@@ -106,7 +106,6 @@ class TestParser(unittest.TestCase):
                                 'emptyfunc', 'receive'}
         self.assertEqual(expected_functions_c, functions_c, 'Functions_c should be identified correctly')
 
-
     def test_optional_version_input(self):
         ast_with_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version='0.7.4')
         ast_without_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version=None)
@@ -125,66 +124,65 @@ class TestParser(unittest.TestCase):
     def test_parser(self):
         import glob
         inputs = glob.glob('contracts/*.sol')
-        for c in inputs :
+        for c in inputs:
             try:
                 self.assertIsNotNone(SolidityAst(c), f'Test contract failed: {c}')
             except Exception as e:
                 print(f'Parsing {c} failed with {e}')
-            
+
     def test_line_number_range_v7(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
-        
+
         # test contract A
         contract_a = ast.contract_by_name('A')
         expected_range_a = (6, 27)
         self.assertEqual(expected_range_a, contract_a.line_num, 'Contract A should have correct line number range')
-        
+
         # test contract B
         contract_b = ast.contract_by_name('B')
         expected_range_b = (29, 42)
         self.assertEqual(expected_range_b, contract_b.line_num, 'Contract B should have correct line number range')
-        
+
         # B.constructor function
         expected_function_range = (34, 36)
         function_range = ast.function_by_name('B', 'constructor').line_num
         self.assertEqual(expected_function_range, function_range)
-        
+
         # B.touch function
         expected_function_range = (38, 41)
         function_range = ast.function_by_name('B', 'touch').line_num
         self.assertEqual(expected_function_range, function_range)
-        
+
         # B.owner; B.val; B.call; Fields
         fields = ast.fields_in_contract_by_name('B')
-        
+
         expected_field_range = (30, 30)
         field_range = fields[0].line_num
         self.assertEqual(expected_field_range, field_range)
-        
+
         expected_field_range = (31, 31)
         field_range = fields[1].line_num
         self.assertEqual(expected_field_range, field_range)
-        
+
         expected_field_range = (32, 32)
         field_range = fields[2].line_num
         self.assertEqual(expected_field_range, field_range)
-        
-        
+
         # test contract C
         contract_c = ast.contract_by_name('C')
         expected_range_c = (44, 136)
         self.assertEqual(expected_range_c, contract_c.line_num, 'Contract C should have correct line number range')
-        
+
         # C.cmasking function
         expected_function_range = (60, 85)
         function_range = ast.function_by_name('C', 'cmasking').line_num
         self.assertEqual(expected_function_range, function_range)
-        
+
         # C.sweep function
         expected_function_range = (87, 100)
         function_range = ast.function_by_name('C', 'sweep').line_num
         self.assertEqual(expected_function_range, function_range)
-        
+
     def test_line_number_range_v8(self):
         ast = SolidityAst(f'{contracts_root}/whole.sol')
         contract = ast.contract_by_name('BEPContext')
@@ -250,7 +248,7 @@ class TestParser(unittest.TestCase):
     def test_multi_src_file_v8(self):
         ast = SolidityAst(f'{contracts_root}/dev/dev.sol')
         # todo more test
-        
+
     def test_all_library(self):
         ast = SolidityAst(f'{contracts_root}/whole.sol')
         lib_name = ast.all_libraries_names
@@ -281,10 +279,8 @@ class TestParser(unittest.TestCase):
         expected_func_name = ['fallback', 'receive', 'fallback']
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
 
-
     def test_program_counter(self):
-        contracts_root = "./contracts"
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol')
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', solc_options={'allow_paths': ""})
         x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
         # print(x)
 
@@ -292,7 +288,6 @@ class TestParser(unittest.TestCase):
         ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.11')
         functions = ast.abstract_function_in_contract_by_name('RampInstantEscrowsPoolInterface')
         self.assertTrue(functions[0].raw.startswith("function"))
-
 
     def test_add_automatic_retrying(self):
         # this will work
@@ -303,3 +298,68 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(f'{contracts_root}/dev/buggy_10.sol', retry_num=0)
         except SolidityAstError:
             print("SolidityAstError is expected")
+
+    def test_event(self):
+        def sub_test(_ast):
+            events = _ast.events_in_contract_by_name('IPoolEvents')
+            self.assertEqual(17, len(events))
+            # first two and last two
+            expected_name = ['Purchase', 'Sell', 'BeforeTokenTransfer', 'implicitType']
+            actual_name = [event.name for event in events[:2] + events[-2:]]
+            self.assertEqual(set(expected_name), set(actual_name))
+
+            expected_signature = [
+                'Purchase(address, uint256, uint256, uint256, uint256, int128)',
+                'Sell(address, uint256, uint256, uint256, uint256, int128)',
+                'BeforeTokenTransfer()',
+                'implicitType(uint256)'
+            ]
+            actual_signature = [event.signature for event in events[:2] + events[-2:]]
+            self.assertEqual(set(expected_signature), set(actual_signature))
+
+            expected_line_num = [(6, 13), (15, 22), (88, 88), (90, 90)]
+            actual_line_num = [event.line_num for event in events[:2] + events[-2:]]
+            self.assertEqual(set(expected_line_num), set(actual_line_num))
+
+            contract_data = ast.contract_by_name('IPoolEvents')
+            self.assertEqual((5, 91), contract_data.line_num)
+
+            event = ast.event_by_name('IPoolEvents', 'Purchase')
+            self.assertEqual((6, 13), event.line_num)
+            self.assertEqual('Purchase(address, uint256, uint256, uint256, uint256, int128)', event.signature)
+            self.assertEqual('Purchase', event.name)
+
+            events  = ast.events_in_contract_by_name('IPoolEvents')
+            events2 = ast.events_in_contract(contract_data)
+            self.assertEqual(17, len(events2))
+            self.assertEqual(events, events2)
+
+        for v in ['0.4.23', '0.5.0', '0.6.0', '0.7.0', '0.8.7', '0.8.17']:
+            ast = SolidityAst(f'{contracts_root}/dev/20_39_IPoolEvents_45678.sol', version=v)
+            sub_test(ast)
+
+    def test_multi_source_line_num_range(self):
+        def sub_test(ast):
+            functions = ast.functions_in_contract_by_name('Storage')
+            self.assertEqual(9, len(functions))
+
+            function_name = ['add_store', 'store', 'store_sec', 'get_balance']
+            line_num = [(18, 20), (7, 9), (6, 8), (17, 19)]
+            for i, name in enumerate(function_name):
+                func = ast.function_by_name('Storage', name)
+                self.assertEqual(line_num[i], func.line_num)
+
+            func1 = ast.function_by_name('Storage', 'store_sec')
+            func2 = ast.function_by_name('SecondStorage', 'store_sec')
+            self.assertEqual(func1.raw, func2.raw)
+
+        for v in ['0.6.0', '0.7.0', '0.8.7']:
+            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v, 
+                              solc_options={'allow_paths': f''})
+            sub_test(ast)
+
+        for v in ['0.8.8', '0.8.12', '0.8.15', '0.8.17']:
+            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
+                              solc_options={'allow_paths': f'', 'base_path': f'{contracts_root}'})
+            sub_test(ast)
+
