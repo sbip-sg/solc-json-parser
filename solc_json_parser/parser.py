@@ -184,6 +184,61 @@ class SolidityAst():
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
     def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}):
+        '''
+    Compile the input contract and create a SolidityAst object.
+
+    Parameters:
+    contract_source_path: str, required
+        a path to the solidity source file or source code as string.
+    version:  str, optional
+        solc version to use for compile the contract. If not provided will use auto detected solc version.
+        Note that SolidityAst will try to compile the contract starting from the lowest detected solc version first, increase the solc version each time when compilation fails.
+    retry_num: int, optional
+        Maximum number of solc versions to try to compile the contract
+
+
+    solc_options: Dict, optional
+    The optionsl passed to the solc compiler, the following options are supports:
+    base_path : Path | str, optional
+        Use the given path as the root of the source tree instead of the root
+        of the filesystem.
+    allow_paths : List | Path | str, optional
+        A path, or list of paths, to allow for imports.
+    output_dir : str, optional
+        Creates one file per component and contract/file at the specified directory.
+    overwrite : bool, optional
+        Overwrite existing files (used in combination with `output_dir`)
+    evm_version: str, optional
+        Select the desired EVM version. Valid options depend on the `solc` version.
+    revert_strings : List | str, optional
+        Strip revert (and require) reason strings or add additional debugging
+        information.
+    metadata_hash : str, optional
+        Choose hash method for the bytecode metadata or disable it.
+    metadata_literal : bool, optional
+        Store referenced sources as literal data in the metadata output.
+    optimize : bool, optional
+        Enable bytecode optimizer.
+    optimize_runs : int, optional
+        Set for how many contract runs to optimize. Lower values will optimize
+        more for initial deployment cost, higher values will optimize more for
+        high-frequency usage.
+    optimize_yul: bool, optional
+        Enable the yul optimizer.
+    no_optimize_yul : bool, optional
+        Disable the yul optimizer.
+    yul_optimizations : int, optional
+        Force yul optimizer to use the specified sequence of optimization steps
+        instead of the built-in one.
+    solc_binary : str | Path, optional
+        Path of the `solc` binary to use. If not given, the currently active
+        version is used (as set by `solcx.set_solc_version`)
+    solc_version: Version, optional
+        `solc` version to use. If not given, the currently active version is used.
+        Ignored if `solc_binary` is also given.
+    allow_empty : bool, optional
+        If `True`, do not raise when no compiled contracts are returned.
+        '''
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
@@ -844,7 +899,7 @@ class SolidityAst():
         else:
             source_code = self.source
         return source_code
-    
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
