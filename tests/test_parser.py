@@ -354,7 +354,7 @@ class TestParser(unittest.TestCase):
             self.assertEqual(func1.raw, func2.raw)
 
         for v in ['0.6.0', '0.7.0', '0.8.7']:
-            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
+            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v, 
                               solc_options={'allow_paths': f''})
             sub_test(ast)
 
@@ -363,8 +363,3 @@ class TestParser(unittest.TestCase):
                               solc_options={'allow_paths': f'', 'base_path': f'{contracts_root}'})
             sub_test(ast)
 
-
-    def test_source_by_pc(self):
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', solc_options={'optimize': True, 'optimize_runs': 200})
-        source = ast.source_by_pc('Test', 278, False)
-        print(f'source: {source}')

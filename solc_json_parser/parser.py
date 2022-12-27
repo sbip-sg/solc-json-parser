@@ -199,13 +199,6 @@ class SolidityAst():
 
     solc_options: Dict, optional
     The optionsl passed to the solc compiler, the following options are supports:
-    base_path : Path | str, optional
-        Use the given path as the root of the source tree instead of the root
-        of the filesystem.
-    allow_paths : List | Path | str, optional
-        A path, or list of paths, to allow for imports.
-    output_dir : str, optional
-        Creates one file per component and contract/file at the specified directory.
     overwrite : bool, optional
         Overwrite existing files (used in combination with `output_dir`)
     evm_version: str, optional
@@ -233,11 +226,6 @@ class SolidityAst():
     solc_binary : str | Path, optional
         Path of the `solc` binary to use. If not given, the currently active
         version is used (as set by `solcx.set_solc_version`)
-    solc_version: Version, optional
-        `solc` version to use. If not given, the currently active version is used.
-        Ignored if `solc_binary` is also given.
-    allow_empty : bool, optional
-        If `True`, do not raise when no compiled contracts are returned.
         '''
         if '\n' in contract_source_path:
             self.source = contract_source_path
@@ -550,22 +538,17 @@ class SolidityAst():
             if self.root_path:
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
+
+            compiler_options = dict(self.solc_options)
+            overwritten_options = dict(base_path=self.base_path,
+                                       import_remappings=self.import_remappings,
+                                       output_values=self.solc_compile_outputs,
+                                       solc_version=self.exact_version)
+            compiler_options.update(overwritten_options)
             if self.compile_type == "file":
-                out = solcx.compile_files(self.file_path,
-                                          base_path=self.base_path,
-                                          allow_paths=self.allow_paths,
-                                          import_remappings=self.import_remappings,
-                                          output_values=self.solc_compile_outputs,
-                                          solc_version=self.exact_version,
-                                          )
+                out = solcx.compile_files(self.file_path, **compiler_options)
             else:
-                out = solcx.compile_source(self.source,
-                                           base_path=self.base_path,
-                                           allow_paths=self.allow_paths,
-                                           import_remappings=self.import_remappings,
-                                           output_values=self.solc_compile_outputs,
-                                           solc_version=self.exact_version,
-                                           )
+                out = solcx.compile_source(self.source, **compiler_options)
             self.original_compilation_output = out
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
