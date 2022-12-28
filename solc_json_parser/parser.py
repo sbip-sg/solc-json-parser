@@ -740,7 +740,7 @@ class SolidityAst():
         return seen_targets
 
     @cache
-    def parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
+    def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
         - `code` list,
@@ -856,13 +856,13 @@ class SolidityAst():
     @cache
     def all_pcs(self, contract_name: str, deploy: bool) -> set[int]:
         '''Return all program counters by contract name'''
-        asm = self.parse_asm_data(contract_name, deploy=deploy)
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return set((get_in(asm, 'pc2idx') or {}).keys())
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:
         '''Return all JUMP, JUMPI destinations by contract name'''
-        asm = self.parse_asm_data(contract_name, deploy=deploy)
+        asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return asm['seen_targets']
 
     def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
@@ -917,7 +917,7 @@ class SolidityAst():
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
         '''
-        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.parse_asm_data(contract_name, deploy=deploy))
+        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         pc_idx = pc2idx.get(pc)
         part = code[pc_idx]
         if part.get('source') is not None:
