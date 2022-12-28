@@ -884,7 +884,6 @@ class SolidityAst():
             source_code = self.source
         return source_code
 
-<<<<<<< HEAD
     @staticmethod
     def parse_src_mapping(srcmap: str):
         def _reduce_fn(accumulator, current_value):
@@ -912,8 +911,6 @@ class SolidityAst():
         parsed = list(reversed(parsed[:-1]))
         return parsed
 
-=======
->>>>>>> main
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
