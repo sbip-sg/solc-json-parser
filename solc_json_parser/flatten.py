@@ -30,10 +30,12 @@ def replace_pragma(seen_meta, prag, head, tail=None) -> Optional[str]:
         seen_meta.add(prag)
     return None
 
-def flatten(file_path: str, seen: Optional[Set[str]] = None, seen_meta=None) -> FlattenSourceResult:
+get_file_name = lambda p: p.split(os.path.sep)[-1]
+
+def flatten(file_path: str, seen: Optional[Set[str]] = None, seen_meta=None, include_paths:str = []) -> FlattenSourceResult:
     '''
     Flatten a contract recursively. Return a list of tuple with three elements:
-    - `file_path` file path the current line belongs to
+    - `file_path` path of current line
     - `linenum` the line numer in the file.
     - `line` the content of the line with the trailing line break
 
@@ -41,7 +43,8 @@ def flatten(file_path: str, seen: Optional[Set[str]] = None, seen_meta=None) -> 
     '''
     seen_meta = seen_meta or set()
     seen = seen or set()
-    if file_path in seen:
+    file_name = get_file_name(os.path.abspath(file_path))
+    if file_name in seen:
         return []
 
     if not os.path.isfile(file_path):
@@ -49,28 +52,39 @@ def flatten(file_path: str, seen: Optional[Set[str]] = None, seen_meta=None) -> 
 
     if not file_path.lower().endswith('.sol'):
         raise FlattenError(f'Only solidity file is allowed: {file_path}')
-
-    seen.add(file_path)
+    include_paths.append(abspath(os.path.join(Path(file_path).parent)))
+    # NOTE here we assume same file name at different places on the file system represent the same file
+    seen.add(file_name)
     content = []
-
-    for linenum, line in enumerate(open(file_path, 'r')):
-        segs = line.strip().split(maxsplit=1)
-        if segs and segs[0] == 'import':
-            quote = segs[1][0]
-            path = segs[1][:-1].strip(quote)
-            print(f'{file_path} {path}')
-            path = abspath(os.path.join(Path(file_path).parent, path))
-            content = content + flatten(path, seen, seen_meta)
-        else:
-            nline = segs and (replace_pragma(seen_meta, F_PRGAMA_ABICODER, *segs) or
-                              replace_pragma(seen_meta, F_PRGAMA_ABICODERV2, *segs) or
-                              replace_pragma(seen_meta, F_PRGAMA_SMTCHECKER, *segs) or
-                              replace_spdx(line))
-            nl = nline or line
-            # a source code file can end without a line break, need to append one
-            nl = nl if nl.endswith('\n') else f'{nl}\n'
-            content.append((abspath(file_path), linenum, nl))
-            # print('{:2d} {} {}'.format(linenum, nl, nl.endswith("\n")))
+    with open(file_path, 'r') as f:
+        for linenum, line in enumerate(f):
+            segs = line.strip().split(maxsplit=1)
+            if segs and segs[0] == 'import':
+                quote = segs[1][0]
+                if '{' in segs[1]:
+                    path = line.split('"')[-2].strip('"')
+                else:
+                    path = segs[1][:-1].strip(quote)
+                found_import = False
+                if os.path.isfile(path):
+                    found_import = True
+                for include_path in include_paths:
+                    if os.path.isfile(include_path+'/'+path):
+                        path = include_path + '/' + path
+                        found_import = True
+                if not found_import:
+                    raise FlattenError(f'Cannot find import file: {path}')
+                path = abspath(os.path.join(Path(file_path).parent, path))
+                content = content + flatten(path, seen, seen_meta, include_paths=include_paths)
+            else:
+                nline = segs and (replace_pragma(seen_meta, F_PRGAMA_ABICODER, *segs) or
+                                  replace_pragma(seen_meta, F_PRGAMA_ABICODERV2, *segs) or
+                                  replace_pragma(seen_meta, F_PRGAMA_SMTCHECKER, *segs) or
+                                  replace_spdx(line))
+                nl = nline or line
+                # a source code file can end without a line break, need to append one
+                nl = nl if nl.endswith('\n') else f'{nl}\n'
+                content.append((abspath(file_path), linenum, nl))
     return content
 
 
@@ -84,7 +98,7 @@ class FlattenSolidity():
     @cached_property
     def flatten_result(self) -> FlattenSourceResult:
         '''
-        Flattened lines containing line number and file paths mapping information between input and output lines 
+        Flattened lines containing line number and file paths mapping information between input and output lines
         '''
         return flatten(self.file_path)
 
@@ -100,5 +114,3 @@ class FlattenSolidity():
         Given a line number in the flattend source code, returns the file path and the line number this line is from
         '''
         return self.flatten_result[linenum]
-        
-
