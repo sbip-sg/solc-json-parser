@@ -5,7 +5,7 @@ import './A.sol';
 import {
     B,
     C
-} from "./C.sol";
+} from './C.sol';
 
 contract D{
 

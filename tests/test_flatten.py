@@ -31,8 +31,8 @@ class TestSourceByPc(unittest.TestCase):
         self.run_tests(TestCase(
             './tests/test_contracts/flatten/B.sol',
             [
-                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 6, 'contract A{'),
-                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 10, 'contract B{'),
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
+                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 11, 'contract B{'),
             ]))
 
 
@@ -41,7 +41,17 @@ class TestSourceByPc(unittest.TestCase):
         self.run_tests(TestCase(
             './tests/test_contracts/flatten/C.sol',
             [
-                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 6, 'contract A{'),
-                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 13, 'contract B{'),
-                FlattenLine('path_ignored', 'C.sol', 6, 'contract C{', 17, 'contract C{'),
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
+                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 16, 'contract B{'),
+                FlattenLine('path_ignored', 'C.sol', 6, 'contract C{', 20, 'contract C{'),
+            ]))
+
+    def test_flatten_line_mapping_with_selective_imports(self):
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/D.sol',
+            [
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
+                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 24, 'contract B{'),
+                FlattenLine('path_ignored', 'C.sol', 6, 'contract C{', 28, 'contract C{'),
+                FlattenLine('path_ignored', 'D.sol', 9, 'contract D{', 32, 'contract D{'),
             ]))

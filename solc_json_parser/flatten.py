@@ -7,6 +7,7 @@ from os.path import abspath
 from functools import cache
 import argparse
 import json
+import re
 
 # Duplicate pragma to be dropped
 F_PRGAMA_ABICODER = 'abicoder'
@@ -41,6 +42,7 @@ def replace_pragma(seen_meta, prag, head, tail=None) -> Optional[str]:
     return None
 
 get_file_name = lambda p: p.split(os.path.sep)[-1]
+quotes = '"\'' # solidity quote character
 
 class FlattenSolidity():
     def __init__(self, file_path: str, include_paths: List[str] = []) -> None:
@@ -49,8 +51,81 @@ class FlattenSolidity():
         self.seen_meta = set()
         self.include_paths = include_paths or []
         self.targetLineNum = 0
+        self.content = []
+        self.isImport = False
 
-    def flatten(self, file_path: str) -> FlattenSourceResult:
+    def hasQuote(self, line: str) -> bool:
+        for c in quotes:
+            if c in line:
+                return True
+        return False
+
+    def searchAndFlatten(self, path):
+        found_import = False
+        if os.path.isfile(path):
+            found_import = True
+        for include_path in self.include_paths:
+            if os.path.isfile(include_path+'/'+path):
+                path = include_path + '/' + path
+                found_import = True
+        if not found_import:
+            raise FlattenError(f'Cannot find import file: {path}')
+        # path = abspath(os.path.join(Path(file_path).parent, path))
+        self.flatten(path)
+
+    def handlePendingImport(self, line, path, filename, linenum):
+        if not self.isImport:
+            return False
+
+        self.targetLineNum += 1
+        self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+        if not self.hasQuote(line):
+            return True
+        else:
+            # path = line.split('"')[-2].strip('"')
+            path = re.split(r'[\'"]', line)[-2].strip(quotes)
+            self.isImport = False
+            self.searchAndFlatten(path)
+            return True
+
+    def handleImport(self, line, path, filename, linenum) -> bool:
+        segs = line.strip().split(maxsplit=1)
+        if not (segs and segs[0] == 'import'):
+            return False
+
+        if '{' in segs[1]:
+            if '"' in line:
+                path = line.split('"')[-2].strip('"')
+                self.searchAndFlatten(path)
+                return True
+            else:
+                self.isImport = True
+                self.targetLineNum += 1
+                self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+                return True
+        else:
+            quote = segs[1][0]
+            path = segs[1][:-1].strip(quote)
+            self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+            self.searchAndFlatten(path)
+            return True
+
+    def handleLine(self, line, path, filename, linenum) -> bool:
+        segs = line.strip().split(maxsplit=1)
+        nl = line
+        if segs:
+            nl = replace_pragma(self.seen_meta, F_PRGAMA_ABICODER, *segs) \
+                or replace_pragma(self.seen_meta, F_PRGAMA_ABICODERV2, *segs) \
+                or replace_pragma(self.seen_meta, F_PRGAMA_SMTCHECKER, *segs) \
+                or replace_spdx(line) \
+                or line
+        # a source code file can end without a line break, need to append one
+        nl = nl if nl.endswith('\n') else f'{nl}\n'
+        self.targetLineNum += 1
+        self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum, nl))
+        return True
+
+    def flatten(self, file_path: str):
         '''
         Flatten a contract recursively. Return a list of tuple with three elements:
         - `file_path` path of current line
@@ -59,14 +134,13 @@ class FlattenSolidity():
 
         Note all line numbers here are zero-based
         '''
-        seen_meta = self.seen_meta
         seen = self.seen
         include_paths = self.include_paths
 
         file_name = get_file_name(os.path.abspath(file_path))
 
         if file_name in seen:
-            return []
+            return
 
         if not os.path.isfile(file_path):
             raise FlattenError(f'Target is not a file: {file_path}')
@@ -76,57 +150,19 @@ class FlattenSolidity():
         include_paths.append(abspath(os.path.join(Path(file_path).parent)))
         # NOTE here we assume same file name at different places on the file system represent the same file
         seen.add(file_name)
-        content = []
-        isImport = False
+
         with open(file_path, 'r') as f:
             for linenum, line in enumerate(f):
-                segs = line.strip().split(maxsplit=1)
-                if isImport and '"' not in line:
-                    self.targetLineNum += 1
-                    content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  f"// {line}"))
-                    continue
-                if segs and (isImport or segs[0] == 'import'):
-                    if '{' in segs[1]:
-                        if '"' in line:
-                            path = line.split('"')[-2].strip('"')
-                        else:
-                            isImport = True
-                            self.targetLineNum += 1
-                            content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  f"// {line}"))
-                            continue
-                    else:
-                        quote = segs[1][0]
-                        path = segs[1][:-1].strip(quote)
-                    found_import = False
-                    isImport = False
-                    if os.path.isfile(path):
-                        found_import = True
-                    for include_path in include_paths:
-                        if os.path.isfile(include_path+'/'+path):
-                            path = include_path + '/' + path
-                            found_import = True
-                    if not found_import:
-                        raise FlattenError(f'Cannot find import file: {path}')
-                    path = abspath(os.path.join(Path(file_path).parent, path))
-                    content = content + self.flatten(path)
-                else:
-                    nline = segs and (replace_pragma(seen_meta, F_PRGAMA_ABICODER, *segs) or
-                                      replace_pragma(seen_meta, F_PRGAMA_ABICODERV2, *segs) or
-                                      replace_pragma(seen_meta, F_PRGAMA_SMTCHECKER, *segs) or
-                                      replace_spdx(line))
-                    nl = nline or line
-                    # a source code file can end without a line break, need to append one
-                    nl = nl if nl.endswith('\n') else f'{nl}\n'
-                    self.targetLineNum += 1
-                    content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  nl))
-        return content
+                args = [line, file_path, file_name, linenum]
+                _ = self.handlePendingImport(*args) or self.handleImport(*args) or self.handleLine(*args)
 
     @cache
     def flatten_result(self) -> FlattenSourceResult:
         '''
         Flattened lines containing line number and file paths mapping information between input and output lines
         '''
-        return self.flatten(self.file_path)
+        self.flatten(self.file_path)
+        return self.content
 
     @cache
     def flatten_source(self) -> str:
