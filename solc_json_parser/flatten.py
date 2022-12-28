@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from dataclasses import asdict
 from typing import List, Optional, Set
 import os
 from pathlib import Path
 from os.path import abspath
-from functools import cached_property
+from functools import cache
 import argparse
-
+import json
 
 # Duplicate pragma to be dropped
 F_PRGAMA_ABICODER = 'abicoder'
@@ -18,7 +19,7 @@ class FlattenError(ValueError):
     pass
 
 @dataclass
-class FlattenLine:
+class FlattenLine():
     path: str
     filename: str
     sourceLineNum: int
@@ -76,16 +77,28 @@ class FlattenSolidity():
         # NOTE here we assume same file name at different places on the file system represent the same file
         seen.add(file_name)
         content = []
+        isImport = False
         with open(file_path, 'r') as f:
             for linenum, line in enumerate(f):
                 segs = line.strip().split(maxsplit=1)
-                if segs and segs[0] == 'import':
-                    quote = segs[1][0]
+                if isImport and '"' not in line:
+                    self.targetLineNum += 1
+                    content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  f"// {line}"))
+                    continue
+                if segs and (isImport or segs[0] == 'import'):
                     if '{' in segs[1]:
-                        path = line.split('"')[-2].strip('"')
+                        if '"' in line:
+                            path = line.split('"')[-2].strip('"')
+                        else:
+                            isImport = True
+                            self.targetLineNum += 1
+                            content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  f"// {line}"))
+                            continue
                     else:
+                        quote = segs[1][0]
                         path = segs[1][:-1].strip(quote)
                     found_import = False
+                    isImport = False
                     if os.path.isfile(path):
                         found_import = True
                     for include_path in include_paths:
@@ -108,31 +121,32 @@ class FlattenSolidity():
                     content.append(FlattenLine(abspath(file_path), file_name, linenum, line, self.targetLineNum,  nl))
         return content
 
-    @cached_property
+    @cache
     def flatten_result(self) -> FlattenSourceResult:
         '''
         Flattened lines containing line number and file paths mapping information between input and output lines
         '''
         return self.flatten(self.file_path)
 
-    @cached_property
+    @cache
     def flatten_source(self) -> str:
         '''
         Flattened source code which can be passed directly to a solc compiler
         '''
-        return ''.join((c[2] for c in self.flatten_result))
+        return ''.join(c.targetLine for c in self.flatten_result())
 
     def reverse_line_lookup(self, linenum) -> FlattenLine:
         '''
         Given a line number in the flattend source code, returns the file path and the line number this line is from
         '''
-        return self.flatten_result[linenum]
+        return self.flatten_result()[linenum]
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, help='The main contract to be flattened', required=True)
     parser.add_argument('--include', action='append', help='The paths of included libraries to be flattened', required=False)
     parser.add_argument('--output', type=str, help='The output path to write file', required=False)
+    parser.add_argument('--json-output', type=str, help='The json output file saving the line mapping information', required=False)
     args = parser.parse_args()
 
     path = args.path
@@ -147,17 +161,21 @@ def main():
     if not os.path.isfile(path):
         raise Exception(f'Target is not file {path}')
 
-    f = FlattenSolidity(path, include_paths = include_paths)
+    fs = FlattenSolidity(path, include_paths = include_paths)
 
-    content = ''.join([fl.targetLine for fl in f.flatten_result])
+    content = ''.join([fl.targetLine for fl in fs.flatten_result()])
 
     filename = path.split(os.path.sep)[-1]
     ext = filename.split('.')[-1]
     output = args.output or (filename[:-len(ext)-1] + '_flattened.' + ext)
+    json_output = args.json_output or (filename[:-len(ext)-1] + '_flattened.json')
 
     with open(output, 'w') as f:
         f.write(content)
 
+    with open(json_output, 'w') as f:
+        r = [asdict(e) for e in fs.flatten_result()]
+        f.write(json.dumps(r))
 
 if __name__ == '__main__':
     main()
