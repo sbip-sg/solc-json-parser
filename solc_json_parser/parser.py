@@ -885,6 +885,7 @@ class SolidityAst():
         return source_code
 
     @staticmethod
+    @cache
     def parse_src_mapping(srcmap: str):
         def _reduce_fn(accumulator, current_value):
             last, *tlist = accumulator
