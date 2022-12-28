@@ -9,7 +9,7 @@ import json
 import os
 import re
 from typing import Collection, Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property, cache
+from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
 
 try:
@@ -184,6 +184,49 @@ class SolidityAst():
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
     def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}):
+        '''
+    Compile the input contract and create a SolidityAst object.
+
+    Parameters:
+    contract_source_path: str, required
+        a path to the solidity source file or source code as string.
+    version:  str, optional
+        solc version to use for compile the contract. If not provided will use auto detected solc version.
+        Note that SolidityAst will try to compile the contract starting from the lowest detected solc version first, increase the solc version each time when compilation fails.
+    retry_num: int, optional
+        Maximum number of solc versions to try to compile the contract
+
+
+    solc_options: Dict, optional
+    The optionsl passed to the solc compiler, the following options are supports:
+    overwrite : bool, optional
+        Overwrite existing files (used in combination with `output_dir`)
+    evm_version: str, optional
+        Select the desired EVM version. Valid options depend on the `solc` version.
+    revert_strings : List | str, optional
+        Strip revert (and require) reason strings or add additional debugging
+        information.
+    metadata_hash : str, optional
+        Choose hash method for the bytecode metadata or disable it.
+    metadata_literal : bool, optional
+        Store referenced sources as literal data in the metadata output.
+    optimize : bool, optional
+        Enable bytecode optimizer.
+    optimize_runs : int, optional
+        Set for how many contract runs to optimize. Lower values will optimize
+        more for initial deployment cost, higher values will optimize more for
+        high-frequency usage.
+    optimize_yul: bool, optional
+        Enable the yul optimizer.
+    no_optimize_yul : bool, optional
+        Disable the yul optimizer.
+    yul_optimizations : int, optional
+        Force yul optimizer to use the specified sequence of optimization steps
+        instead of the built-in one.
+    solc_binary : str | Path, optional
+        Path of the `solc` binary to use. If not given, the currently active
+        version is used (as set by `solcx.set_solc_version`)
+        '''
         if '\n' in contract_source_path:
             self.source = contract_source_path
             self.file_path = None
@@ -444,7 +487,7 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("multi_file5.0")
+        self.save_solc_ast_json("pc")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -495,22 +538,17 @@ class SolidityAst():
             if self.root_path:
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
+
+            compiler_options = dict(self.solc_options)
+            overwritten_options = dict(base_path=self.base_path,
+                                       import_remappings=self.import_remappings,
+                                       output_values=self.solc_compile_outputs,
+                                       solc_version=self.exact_version)
+            compiler_options.update(overwritten_options)
             if self.compile_type == "file":
-                out = solcx.compile_files(self.file_path,
-                                          base_path=self.base_path,
-                                          allow_paths=self.allow_paths,
-                                          import_remappings=self.import_remappings,
-                                          output_values=self.solc_compile_outputs,
-                                          solc_version=self.exact_version,
-                                          )
+                out = solcx.compile_files(self.file_path, **compiler_options)
             else:
-                out = solcx.compile_source(self.source,
-                                           base_path=self.base_path,
-                                           allow_paths=self.allow_paths,
-                                           import_remappings=self.import_remappings,
-                                           output_values=self.solc_compile_outputs,
-                                           solc_version=self.exact_version,
-                                           )
+                out = solcx.compile_source(self.source, **compiler_options)
             self.original_compilation_output = out
             self.solc_json_ast = {k.split(':')[-1]: v for k, v in out.items()}
         except Exception as e:
@@ -702,7 +740,7 @@ class SolidityAst():
         return seen_targets
 
     @cache
-    def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
+    def parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
         - `code` list,
@@ -800,6 +838,7 @@ class SolidityAst():
             path = get_in(self.solc_json_ast, contract_name, 'ast', 'absolutePath')
         else:
             path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
+
         base_path = self.base_path or self.root_path
         return None if (not path) or path == '<stdin>' else os.path.join(base_path, path)
 
@@ -817,13 +856,13 @@ class SolidityAst():
     @cache
     def all_pcs(self, contract_name: str, deploy: bool) -> set[int]:
         '''Return all program counters by contract name'''
-        asm = self.__parse_asm_data(contract_name, deploy=deploy)
+        asm = self.parse_asm_data(contract_name, deploy=deploy)
         return set((get_in(asm, 'pc2idx') or {}).keys())
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:
         '''Return all JUMP, JUMPI destinations by contract name'''
-        asm = self.__parse_asm_data(contract_name, deploy=deploy)
+        asm = self.parse_asm_data(contract_name, deploy=deploy)
         return asm['seen_targets']
 
     def coverage(self, contract_name: str, pcs: Collection[int]) -> float:
@@ -844,24 +883,57 @@ class SolidityAst():
         else:
             source_code = self.source
         return source_code
-    
+
+    @staticmethod
+    def parse_src_mapping(srcmap: str):
+        def _reduce_fn(accumulator, current_value):
+            last, *tlist = accumulator
+            return [
+                {
+                    's': int(current_value['s'] or last['s']),
+                    'l': int(current_value['l'] or last['l']),
+                    'f': int(current_value['f'] or last['f']),
+                },
+                last,
+                *tlist
+            ]
+
+        parsed = srcmap.split(";")
+        parsed = [l.split(':') for l in parsed]
+        t = []
+        for l in parsed:
+            if len(l) >= 3:
+                t.append(l[:3])
+            else:
+                t.append(l + [None] * (3 - len(l)))
+        parsed = [{'s': s if s != "" else None, 'l': l, 'f': f} for s, l, f in t]
+        parsed = reduce(_reduce_fn, parsed, [{}])
+        parsed = list(reversed(parsed[:-1]))
+        return parsed
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
         '''
-        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
-        part = code[pc2idx[pc]]
+        code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.parse_asm_data(contract_name, deploy=deploy))
+        pc_idx = pc2idx.get(pc)
+        part = code[pc_idx]
+        if part.get('source') is not None:
+            source_idx = part['source']
+        else:
+            src_mapping = self.solc_json_ast[contract_name]['srcmap-runtime']
+            parsed_mapping = self.parse_src_mapping(src_mapping)
+            mapping_idx = list(pc2idx.values()).index(pc_idx)
+            source_idx = parsed_mapping[mapping_idx].get('f')
 
         begin, end = itemgetter('begin', 'end')(part)
-        source_idx = part.get('source')
         source_idx = source_idx if source_idx is not None else list(self.solc_json_ast.keys()).index(contract_name)
         source_path = self.__source_path_from_source_list(source_list, source_idx)
         source_code = self.__source_code_from_source_path(source_path)
 
-        source = get_in(part, 'source') or 0 # WARN: assuming yul source is has index 1, not true for multi-source file contract
-        source = source_idx
+        source = source_idx # WARN: assuming yul source is has index 1, not true for multi-source file contract
         yul_index = len(source_list) - 1
         if source == yul_index and self.v8 and not deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
