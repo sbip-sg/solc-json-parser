@@ -1,42 +1,47 @@
 from dataclasses import dataclass
 import unittest
-from solc_json_parser.flatten import FlattenSolidity
-from typing import Dict, Any, Iterable, List
-
-@dataclass
-class ExpectedLineMapping:
-    filename: str
-    sourceLineNum: int
-    sourceLine: str
-    targetLineNum: int
-
+from solc_json_parser.flatten import FlattenLine, FlattenSolidity
 
 class TestCase():
-    def __init__(self, path: str, expected_line_mappings = Iterable[ExpectedLineMapping]):
+    def __init__(self, path: str, expected_line_mappings = [FlattenLine]):
         self.path = path
         self.expected_line_mappings = expected_line_mappings
 
+
 class TestSourceByPc(unittest.TestCase):
-    def test_flatten_line_mapping_with_no_imports(self):
-        test_cases = [
-            TestCase(
-                './tests/test_contracts/flatten/A.sol',
-                [ExpectedLineMapping('A.sol', 0, '// SPDX-License-Identifier: MIT', 0),
-                 ExpectedLineMapping('A.sol', 0, '// SPDX-License-Identifier: MIT', 0),])
-        ]
+    def run_tests(self, *test_cases):
         for t in test_cases:
             f = FlattenSolidity(t.path)
             for e in t.expected_line_mappings:
-                self.assertEqual(f.reverse_line_lookup(e.targetLineNum)[1], e.targetLineNum, f'Flatten line mapping error with source {t.path}: {e}')
+                fline = f.reverse_line_lookup(e.targetLineNum)
+                hint = '{actual} != {expected}'
+                self.assertEqual(fline.sourceLineNum, e.sourceLineNum, f'{hint} @ {t.path}: {e}')
+                self.assertEqual(fline.sourceLine.strip(), e.sourceLine.strip(), f'{hint} @ {t.path}: {e}')
+                self.assertEqual(fline.filename, e.filename, f'{hint} @ {t.path}: {e}')
+
+    def test_flatten_line_mapping_with_no_imports(self):
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/A.sol',
+            [
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 3, 'contract A{'),
+            ]))
 
 
     def test_flatten_line_mapping_with_single_imports(self):
-        test_cases = []
-        for t in test_cases:
-            pass
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/B.sol',
+            [
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 6, 'contract A{'),
+                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 10, 'contract B{'),
+            ]))
+
 
 
     def test_flatten_line_mapping_with_multiple_imports(self):
-        test_cases = []
-        for t in test_cases:
-            pass
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/C.sol',
+            [
+                FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 6, 'contract A{'),
+                FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 13, 'contract B{'),
+                FlattenLine('path_ignored', 'C.sol', 6, 'contract C{', 17, 'contract C{'),
+            ]))
