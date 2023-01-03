@@ -9,7 +9,7 @@ import json
 import os
 import re
 from typing import Collection, Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property, cache
+from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
 
 try:
@@ -838,6 +838,7 @@ class SolidityAst():
             path = get_in(self.solc_json_ast, contract_name, 'ast', 'absolutePath')
         else:
             path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
+
         base_path = self.base_path or self.root_path
         return None if (not path) or path == '<stdin>' else os.path.join(base_path, path)
 
@@ -883,6 +884,34 @@ class SolidityAst():
             source_code = self.source
         return source_code
 
+    @staticmethod
+    @cache
+    def parse_src_mapping(srcmap: str):
+        def _reduce_fn(accumulator, current_value):
+            last, *tlist = accumulator
+            return [
+                {
+                    's': int(current_value['s'] or last['s']),
+                    'l': int(current_value['l'] or last['l']),
+                    'f': int(current_value['f'] or last['f']),
+                },
+                last,
+                *tlist
+            ]
+
+        parsed = srcmap.split(";")
+        parsed = [l.split(':') for l in parsed]
+        t = []
+        for l in parsed:
+            if len(l) >= 3:
+                t.append(l[:3])
+            else:
+                t.append(l + [None] * (3 - len(l)))
+        parsed = [{'s': s if s != "" else None, 'l': l, 'f': f} for s, l, f in t]
+        parsed = reduce(_reduce_fn, parsed, [{}])
+        parsed = list(reversed(parsed[:-1]))
+        return parsed
+
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         '''
         Get source code by program counter:
@@ -890,16 +919,22 @@ class SolidityAst():
         - `deploy`: set to true to search in deploy opcodes
         '''
         code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
-        part = code[pc2idx[pc]]
+        pc_idx = pc2idx.get(pc)
+        part = code[pc_idx]
+        if part.get('source') is not None:
+            source_idx = part['source']
+        else:
+            src_mapping = self.solc_json_ast[contract_name]['srcmap-runtime']
+            parsed_mapping = self.parse_src_mapping(src_mapping)
+            mapping_idx = list(pc2idx.values()).index(pc_idx)
+            source_idx = parsed_mapping[mapping_idx].get('f')
 
         begin, end = itemgetter('begin', 'end')(part)
-        source_idx = part.get('source')
         source_idx = source_idx if source_idx is not None else list(self.solc_json_ast.keys()).index(contract_name)
         source_path = self.__source_path_from_source_list(source_list, source_idx)
         source_code = self.__source_code_from_source_path(source_path)
 
-        source = get_in(part, 'source') or 0 # WARN: assuming yul source is has index 1, not true for multi-source file contract
-        source = source_idx
+        source = source_idx # WARN: assuming yul source is has index 1, not true for multi-source file contract
         yul_index = len(source_list) - 1
         if source == yul_index and self.v8 and not deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']

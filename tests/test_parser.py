@@ -280,9 +280,31 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
 
     def test_program_counter(self):
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', solc_options={'allow_paths': ""})
-        x = ast.source_by_pc(contract_name='Storage', pc=234, deploy=False)
-        # print(x)
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage_pc.sol', solc_options={'allow_paths': ""})
+        expected_data = [
+            (261, (7, 9),   (102, 166)),
+            (262, (8, 8),   (156, 159)),
+            (283, (19, 19), (479, 493)),
+        ]
+        for pc, expected_linenums, expected_range in expected_data:
+            data = ast.source_by_pc(contract_name='Storage', pc=pc, deploy=False)
+            self.assertEqual(expected_linenums, data['linenums'], 'Should have correct line number')
+            self.assertEqual(expected_range, (data['begin'], data['end']), 'Should have correct range')
+
+        # test with optimize=True
+        ast = SolidityAst(f'{contracts_root}/dev/test_pc.sol', solc_options={
+            'optimize': True,
+        })
+        expected_data = [
+            (278,  (15, 15), (465, 476)),
+            (293,  (16, 16), (500, 511)),
+            (99,   (14, 17), (366, 527)),
+        ]
+        for pc, expected_linenums, expected_range in expected_data:
+            data = ast.source_by_pc(contract_name='Test', pc=pc, deploy=False)
+            self.assertEqual(expected_linenums, data['linenums'], 'Should have correct range')
+            self.assertEqual(expected_range, (data['begin'], data['end']), 'Should have correct range')
+
 
     def test_unicode_characters(self):
         ast = SolidityAst(f'{contracts_root}/dev/buggy20.sol', version='0.5.11')
