@@ -14,7 +14,7 @@ class TestSourceByPc(unittest.TestCase):
             f = FlattenSolidity(t.path)
             for e in t.expected_line_mappings:
                 fline = f.reverse_line_lookup(e.targetLineNum)
-                hint = '{actual} != {expected}'
+                hint = f'Actual: {fline} != Expected: f{e}'
                 self.assertEqual(fline.sourceLineNum, e.sourceLineNum, f'{hint} @ {t.path}: {e}')
                 self.assertEqual(fline.sourceLine.strip(), e.sourceLine.strip(), f'{hint} @ {t.path}: {e}')
                 self.assertEqual(fline.filename, e.filename, f'{hint} @ {t.path}: {e}')
@@ -54,4 +54,14 @@ class TestSourceByPc(unittest.TestCase):
                 FlattenLine('path_ignored', 'B.sol', 5, 'contract B{', 24, 'contract B{'),
                 FlattenLine('path_ignored', 'C.sol', 6, 'contract C{', 28, 'contract C{'),
                 FlattenLine('path_ignored', 'D.sol', 9, 'contract D{', 32, 'contract D{'),
+            ]))
+
+
+    def test_flatten_line_mapping_with_complex_contract(self):
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/complex/01_13_INSURToken.sol',
+            [
+                FlattenLine('path_ignored', '01_13_INSURToken.sol', 56, 'function addSender(address _from) external onlyAdmin {', 1723, 'function addSender(address _from) external onlyAdmin {'),
+                FlattenLine('path_ignored', '01_13_INSURToken.sol', 140, 'function delegate(address _delegatee) external {', 1807, 'function delegate(address _delegatee) external {'),
+                FlattenLine('path_ignored', '04_13_AccessControlUpgradeable.sol', 142, 'function grantRole(bytes32 role, address account) public virtual {', 718, 'function grantRole(bytes32 role, address account) public virtual {'),
             ]))

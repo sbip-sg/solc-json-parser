@@ -73,12 +73,17 @@ class FlattenSolidity():
         # path = abspath(os.path.join(Path(file_path).parent, path))
         self.flatten(path)
 
+    def appendFlattenLine(self, fline: FlattenLine):
+        fline.targetLineNum = self.targetLineNum
+        self.targetLineNum += 1
+        self.content.append(fline)
+
     def handlePendingImport(self, line, path, filename, linenum):
         if not self.isImport:
             return False
 
-        self.targetLineNum += 1
-        self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+        self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
+
         if not self.hasQuote(line):
             return True
         else:
@@ -100,13 +105,12 @@ class FlattenSolidity():
                 return True
             else:
                 self.isImport = True
-                self.targetLineNum += 1
-                self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+                self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
                 return True
         else:
             quote = segs[1][0]
             path = segs[1][:-1].strip(quote)
-            self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum,  f"// {line}"))
+            self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
             self.searchAndFlatten(path)
             return True
 
@@ -121,8 +125,7 @@ class FlattenSolidity():
                 or line
         # a source code file can end without a line break, need to append one
         nl = nl if nl.endswith('\n') else f'{nl}\n'
-        self.targetLineNum += 1
-        self.content.append(FlattenLine(abspath(path), filename, linenum, line, self.targetLineNum, nl))
+        self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0, nl))
         return True
 
     def flatten(self, file_path: str):
