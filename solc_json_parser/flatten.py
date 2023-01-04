@@ -42,7 +42,7 @@ def replace_pragma(seen_meta, prag, head, tail=None) -> Optional[str]:
     return None
 
 get_file_name = lambda p: p.split(os.path.sep)[-1]
-quotes = '"\'' # solidity quote character
+quotes = '"\'' # solidity quote characters
 
 class FlattenSolidity():
     def __init__(self, file_path: str, include_paths: List[str] = []) -> None:
@@ -73,8 +73,8 @@ class FlattenSolidity():
         # path = abspath(os.path.join(Path(file_path).parent, path))
         self.flatten(path)
 
-    def appendFlattenLine(self, fline: FlattenLine):
-        fline.targetLineNum = self.targetLineNum
+    def appendFlattenLine(self, path, filename, srcLineNum, srcLine, targetLine):
+        fline = FlattenLine(path, filename, srcLineNum, srcLine, self.targetLineNum, targetLine)
         self.targetLineNum += 1
         self.content.append(fline)
 
@@ -82,7 +82,7 @@ class FlattenSolidity():
         if not self.isImport:
             return False
 
-        self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
+        self.appendFlattenLine(abspath(path), filename, linenum, line, f"// {line}")
 
         if not self.hasQuote(line):
             return True
@@ -105,12 +105,12 @@ class FlattenSolidity():
                 return True
             else:
                 self.isImport = True
-                self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
+                self.appendFlattenLine(abspath(path), filename, linenum, line,  f"// {line}")
                 return True
         else:
             quote = segs[1][0]
             path = segs[1][:-1].strip(quote)
-            self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0,  f"// {line}"))
+            self.appendFlattenLine(abspath(path), filename, linenum, line, f"// {line}")
             self.searchAndFlatten(path)
             return True
 
@@ -125,7 +125,7 @@ class FlattenSolidity():
                 or line
         # a source code file can end without a line break, need to append one
         nl = nl if nl.endswith('\n') else f'{nl}\n'
-        self.appendFlattenLine(FlattenLine(abspath(path), filename, linenum, line, 0, nl))
+        self.appendFlattenLine(abspath(path), filename, linenum, line, nl)
         return True
 
     def flatten(self, file_path: str):
