@@ -245,6 +245,14 @@ class TestParser(unittest.TestCase):
         field_range = fields[1].line_num
         self.assertEqual(expected_field_range, field_range)
 
+    def test_function_by_name_utf8(self):
+        ast = SolidityAst(f'./tests/test_contracts/rubic.sol')
+        f = ast.function_by_name('BridgeBase', 'setMaxTokenAmount')
+        self.assertEqual((2158, 2164), f.line_num)
+
+        f = ast.function_by_name('RubicProxy', 'setMaxTokenAmount')
+        self.assertEqual((2158, 2164), f.line_num)
+
     def test_multi_src_file_v8(self):
         ast = SolidityAst(f'{contracts_root}/dev/dev.sol')
         # todo more test
@@ -376,7 +384,7 @@ class TestParser(unittest.TestCase):
             self.assertEqual(func1.raw, func2.raw)
 
         for v in ['0.6.0', '0.7.0', '0.8.7']:
-            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v, 
+            ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
                               solc_options={'allow_paths': f''})
             sub_test(ast)
 
@@ -384,4 +392,3 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
                               solc_options={'allow_paths': f'', 'base_path': f'{contracts_root}'})
             sub_test(ast)
-

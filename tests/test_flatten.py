@@ -57,11 +57,21 @@ class TestSourceByPc(unittest.TestCase):
             ]))
 
 
-    def test_flatten_line_mapping_with_complex_contract(self):
+    def test_flatten_line_mapping_with_complex_01_contract(self):
         self.run_tests(TestCase(
-            './tests/test_contracts/flatten/complex/01_13_INSURToken.sol',
+            './tests/test_contracts/flatten/01/01_13_INSURToken.sol',
             [
                 FlattenLine('path_ignored', '01_13_INSURToken.sol', 56, 'function addSender(address _from) external onlyAdmin {', 1723, 'function addSender(address _from) external onlyAdmin {'),
                 FlattenLine('path_ignored', '01_13_INSURToken.sol', 140, 'function delegate(address _delegatee) external {', 1807, 'function delegate(address _delegatee) external {'),
                 FlattenLine('path_ignored', '04_13_AccessControlUpgradeable.sol', 142, 'function grantRole(bytes32 role, address account) public virtual {', 718, 'function grantRole(bytes32 role, address account) public virtual {'),
+            ]))
+
+    def test_flatten_line_mapping_with_complex_02_contract(self):
+        self.run_tests(TestCase(
+            './tests/test_contracts/flatten/02/01_20_RubicProxy.sol',
+            [
+                FlattenLine('path_ignored', '01_20_RubicProxy.sol', 119, 'function sweepTokens(address _token, uint256 _amount) external onlyAdmin {', 2429, 'function sweepTokens(address _token, uint256 _amount) external onlyAdmin {'),
+                FlattenLine('path_ignored', '04_20_BridgeBase.sol', 342, 'function setMinTokenAmount(address _token, uint256 _minTokenAmount) external onlyManagerOrAdmin {', 2169, 'function setMinTokenAmount(address _token, uint256 _minTokenAmount) external onlyManagerOrAdmin {'),
+                FlattenLine('path_ignored', '04_20_BridgeBase.sol', 355, 'function setMaxTokenAmount(address _token, uint256 _maxTokenAmount) external onlyManagerOrAdmin {', 2182, 'function setMaxTokenAmount(address _token, uint256 _maxTokenAmount) external onlyManagerOrAdmin {'),
+
             ]))
