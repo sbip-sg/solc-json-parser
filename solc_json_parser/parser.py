@@ -827,10 +827,10 @@ class SolidityAst():
         start_index, offset, source_file_idx = line_number_range_raw
         source_list = self.get_source_list()
         source_path = self.__source_path_from_source_list(source_list, source_file_idx)
-        source_code = self.__source_code_from_source_path(source_path)
-        start_line = source_code[:start_index].count('\n') + 1
-        end_line = start_line + source_code[start_index:start_index + offset].count('\n')
-        return (start_line, end_line), source_code
+        source_code_bytes = self.__source_code_from_source_path(source_path).encode()
+        start_line = source_code_bytes[:start_index].decode().count('\n') + 1
+        end_line = start_line + source_code_bytes[start_index:start_index + offset].decode().count('\n')
+        return (start_line, end_line), source_code_bytes.decode()
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
         path = None
