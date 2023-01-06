@@ -392,3 +392,16 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage.sol', version=v,
                               solc_options={'allow_paths': f'', 'base_path': f'{contracts_root}'})
             sub_test(ast)
+
+    def test_mapping_yul(self):
+        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol.txt')
+        expected_data = [
+            (14004, (185, 185), (5927, 5980)),
+            (13948, (173, 176), (5523, 5662)),
+            (13959, (175, 175), (5623, 5656)),
+        ]
+        for pc, expected_linenums, expected_range in expected_data:
+            data = ast.source_by_pc(contract_name='RubicProxy', pc=pc, deploy=False)
+            self.assertEqual(data.get('source_path'), '#utility.yul', 'Should have correct yul path')
+            self.assertEqual(expected_linenums, data['linenums'], 'Should have correct range')
+            self.assertEqual(expected_range, (data['begin'], data['end']), 'Should have correct range')
