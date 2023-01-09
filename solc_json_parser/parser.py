@@ -753,6 +753,11 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
+
+        # contract.get('asm').get('sourceList') is introduced in 0.8.15, it is not put in get_source_list() for 2 reasons
+        # 1. it is quite a new feature, get_source_list() is to support more common cases.
+        # 2. contract.get('asm').get('sourceList') requires you to know the contract name first, get_source_list() is
+        #    independent of contract names.
         source_list = contract.get('asm').get('sourceList') if contract.get('asm').get('sourceList') else self.get_source_list()
 
         if not deploy:
@@ -812,6 +817,15 @@ class SolidityAst():
 
     @cache
     def get_source_list(self):
+        """
+        explanation on `yul_support_flag`:
+        contract.get('asm').get('sourceList') is introduced very lately in 0.8.15. In this sourceList we get from the
+        output, "#utility.yul" is at last. For example, if there are two files, a.sol and b.sol, the sourceList will
+        look like: ["a.sol", "b.sol", "#utility.yul"]. But in the earlier version, we get the sourceList by analyzing
+        the AST. Yul is introduced in solidity in 0.7.2. So between 0.7.2 and 0.8.15, we want to get a same output
+        from self.get_source_list(). So we check if there are generated-sources and generated-sources-runtime in it
+        by using the yul_support_flag then we append "#utility.yul" to the list accordingly.
+        """
         source_list = []
         idx2path = {}
         yul_support_flag = False
@@ -920,11 +934,11 @@ class SolidityAst():
         return parsed
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
-        '''
+        """
         Get source code by program counter:
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
-        '''
+        """
         code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         pc_idx = pc2idx.get(pc)
         part = code[pc_idx]
