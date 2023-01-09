@@ -394,7 +394,7 @@ class TestParser(unittest.TestCase):
             sub_test(ast)
 
     def test_mapping_yul(self):
-        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol.txt')
+        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol')
         expected_data = [
             (14004, (185, 185), (5927, 5980)),
             (13948, (173, 176), (5523, 5662)),
