@@ -753,7 +753,12 @@ class SolidityAst():
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
         # deploys = contract.get('asm').get('.code')
         opcodes = contract.get('opcodes').split()
-        source_list = self.get_source_list()
+
+        # contract.get('asm').get('sourceList') is introduced in 0.8.15, it is not put in get_source_list() for 2 reasons
+        # 1. it is quite a new feature, get_source_list() is to support more common cases.
+        # 2. contract.get('asm').get('sourceList') requires you to know the contract name first, get_source_list() is
+        #    independent of contract names.
+        source_list = contract.get('asm').get('sourceList') if contract.get('asm').get('sourceList') else self.get_source_list()
 
         if not deploy:
             opcodes = SolidityAst.__skip_deploys(opcodes)
@@ -812,15 +817,31 @@ class SolidityAst():
 
     @cache
     def get_source_list(self):
+        """
+        explanation on `yul_support_flag`:
+        contract.get('asm').get('sourceList') is introduced very lately in 0.8.15. In this sourceList we get from the
+        output, "#utility.yul" is at last. For example, if there are two files, a.sol and b.sol, the sourceList will
+        look like: ["a.sol", "b.sol", "#utility.yul"]. But in the earlier version, we get the sourceList by analyzing
+        the AST. Yul is introduced in solidity in 0.7.2. So between 0.7.2 and 0.8.15, we want to get a same output
+        from self.get_source_list(). So we check if there are generated-sources and generated-sources-runtime in it
+        by using the yul_support_flag then we append "#utility.yul" to the list accordingly.
+        """
         source_list = []
         idx2path = {}
+        yul_support_flag = False
         for contract_name in self.solc_json_ast.keys():
             absolute_path = self.source_path_by_contract(contract_name)
             idx = get_in(self.solc_json_ast, contract_name, 'ast', 'src').split(':')[-1]
             idx2path[int(idx)] = absolute_path
+            if self.solc_json_ast.get(contract_name).get('generated-sources') and \
+                    self.solc_json_ast.get(contract_name).get('generated-sources-runtime'):
+                yul_support_flag = True
         sort_keys = sorted(idx2path.keys())
         for idx in sort_keys:
             source_list.append(idx2path[idx])
+
+        if yul_support_flag:
+            source_list.append("#utility.yul")
         return source_list
 
     def get_line_number_range_and_source(self, line_number_range_raw: list):
@@ -913,11 +934,11 @@ class SolidityAst():
         return parsed
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
-        '''
+        """
         Get source code by program counter:
         - `pc`: program counter
         - `deploy`: set to true to search in deploy opcodes
-        '''
+        """
         code, pc2idx, source_list = itemgetter('code', 'pc2idx', 'source_list')(self.__parse_asm_data(contract_name, deploy=deploy))
         pc_idx = pc2idx.get(pc)
         part = code[pc_idx]
@@ -932,23 +953,23 @@ class SolidityAst():
         begin, end = itemgetter('begin', 'end')(part)
         source_idx = source_idx if source_idx is not None else list(self.solc_json_ast.keys()).index(contract_name)
         source_path = self.__source_path_from_source_list(source_list, source_idx)
-        source_code = self.__source_code_from_source_path(source_path)
 
-        source = source_idx # WARN: assuming yul source is has index 1, not true for multi-source file contract
+        # WARN: assuming yul source is has index 1 for single file, if multi-file, yul file index is at the last.
+        # e.g. [a.sol, util/b.sol, #utility.yul]
         yul_index = len(source_list) - 1
-        if source == yul_index and self.v8 and not deploy:
+        if source_idx == yul_index and self.v8 and not deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
-        elif source == yul_index and self.v8 and deploy:
+        elif source_idx == yul_index and self.v8 and deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources'][0]['contents']
         else:
-            combined_source = source_code
+            combined_source = self.__source_code_from_source_path(source_path)
         # assumes utf8 encoding here
         source_as_bytes = combined_source.encode()
         fragment = source_as_bytes[begin:end].decode()
         # print ("fragment ", fragment)
         linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
                     source_as_bytes[:end].decode().count('\n') + 1)
-        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source, source_path=(source_path or self.file_path))
+        return dict(pc=pc, fragment=fragment, begin=begin, end=end, linenums=linenums, source_idx=source_idx, source_path=(source_path or self.file_path))
 
     def get_any(self, *keys) -> Any:
         '''Get any value by keys from the original compiled ast data'''
