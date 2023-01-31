@@ -51,7 +51,19 @@ class ContractData:
     line_num:       tuple  # (start, end)
     contract_id:    int    # unique id in ast per solc compilation
     events:         List[Event]
+@dataclass
+class Literal:
+    token_type: str
+    sub_type:   str
+    str_value:  str
+    hex_value:  str
 
+    def __hash__(self):
+        return hash((self.str_value, self.sub_type))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.str_value == other.str_value \
+                                                 and self.sub_type == other.sub_type
 
 
 

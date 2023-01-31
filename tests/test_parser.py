@@ -405,3 +405,10 @@ class TestParser(unittest.TestCase):
             self.assertEqual(data.get('source_path'), '#utility.yul', 'Should have correct yul path')
             self.assertEqual(expected_linenums, data['linenums'], 'Should have correct range')
             self.assertEqual(expected_range, (data['begin'], data['end']), 'Should have correct range')
+
+
+    def test_get_all_literals(self):
+        ast = SolidityAst(f'.{contracts_root}/dev/test_literals.sol')
+        literals = ast.get_literals("Test", only_value=True)
+        print(literals)
+

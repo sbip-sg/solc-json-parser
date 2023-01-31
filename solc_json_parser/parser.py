@@ -13,11 +13,11 @@ from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
 
 try:
-    from fields import Field, Function, ContractData, Modifier, Event
+    from fields import Field, Function, ContractData, Modifier, Event, Literal
     from version_cfg import v_keys
     import consts
 except:
-    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event
+    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event, Literal
     from solc_json_parser.version_cfg import v_keys
     import solc_json_parser.consts
 
@@ -487,7 +487,7 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("multi_file5.0")
+        self.save_solc_ast_json("test_literal")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -562,7 +562,7 @@ class SolidityAst():
             os.chdir(current_working_dir)
 
     def save_solc_ast_json(self, name: str):
-        with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
+        with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc.json', 'w') as f:
             json.dump(self.solc_json_ast, f, indent=4)
 
     def save_parsed_info_json(self, name: str):
@@ -985,6 +985,67 @@ class SolidityAst():
     def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
         '''Get deployment binary by hash of fully qualified contract / library name'''
         return self.get_any(self.qualified_name_from_hash(hsh), 'bin')
+
+    def get_literals(self, contract_name: str, only_value=False) -> dict:
+        """
+        Get all literals(number, address, string, other) in the contract.
+        for 'other' type, if only_value is True, return the string value
+        - `contract_name`: contract_name in string
+        - `only_value`: set to true to get only values, otherwise get all literal objects
+        """
+
+        # traverse the dictionary and get all the literals
+        literals_nodes = set()
+
+        def traverse(node):
+            if node.get('name') == 'Literal' and node.get('attributes'):
+                literals_nodes.add(Literal(
+                    hex_value=node['attributes']['hexvalue'],
+                    str_value=node['attributes']['value'],
+                    sub_type=node['attributes']['type'],
+                    token_type=node['attributes']['token'],
+                ))
+            else:
+                for child in node.get('children', []):
+                    if isinstance(child, dict):
+                        traverse(child)
+
+        root_node = self.solc_json_ast[contract_name]['ast']
+        traverse(root_node)
+        from pprint import pprint
+        pprint(literals_nodes)
+        literals = dict(number=set(), string=set(), address=set(), other=set())
+        for literal in literals_nodes:
+            if literal.sub_type is None and literal.token_type == 'number':
+                if only_value and literal.str_value.isdecimal():
+                    literals['number'].add(int(literal.str_value))
+                else:
+                    literals['number'].add(literal)
+            elif literal.sub_type.startswith("address"):
+                if only_value:
+                    literals['address'].add(literal.str_value)
+                else:
+                    literals['address'].add(literal)
+            elif literal.sub_type.startswith("int"):
+                if only_value:
+                    literals['number'].add(int(literal.sub_type.split(' ')[1]))
+                else:
+                    literals['number'].add(literal)
+            # check if string in token_type, ignore case
+            elif literal.sub_type.startswith("literal_string"):
+                if only_value:
+                    literals['string'].add(literal.str_value)
+                else:
+                    literals['string'].add(literal)
+            elif literal.sub_type.startswith("bool"):
+                continue
+            else:
+                if only_value:
+                    literals['other'].add(literal.str_value)
+                else:
+                    literals['other'].add(literal)
+
+        return literals
 
 
 if __name__ == '__main__':
