@@ -954,9 +954,11 @@ class SolidityAst():
         source_idx = source_idx if source_idx is not None else list(self.solc_json_ast.keys()).index(contract_name)
         source_path = self.__source_path_from_source_list(source_list, source_idx)
 
-        # WARN: assuming yul source is has index 1 for single file, if multi-file, yul file index is at the last.
+        # NOTE: assuming yul file is at the last in the generated source list
         # e.g. [a.sol, util/b.sol, #utility.yul]
-        yul_index = len(source_list) - 1
+        has_yul = len(source_list) > 1
+        yul_index = len(source_list) - 1 if has_yul else -1
+
         if source_idx == yul_index and self.v8 and not deploy:
             combined_source = self.solc_json_ast[contract_name]['generated-sources-runtime'][0]['contents']
         elif source_idx == yul_index and self.v8 and deploy:
