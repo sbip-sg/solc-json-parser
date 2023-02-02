@@ -285,7 +285,7 @@ class SolidityAst():
         return raw, line_number_range
 
     def get_signature(self, function_name, parameters, kind='function') -> str:
-        if kind in ['function', 'constructor']:
+        if kind in ['constructor']:
             return ''
 
         signature = "" + function_name + "("
