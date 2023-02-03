@@ -998,23 +998,40 @@ class SolidityAst():
         literals_nodes = set()
 
         def traverse(node):
-            if node.get('name') == 'Literal' and node.get('attributes'):
-                literals_nodes.add(Literal(
-                    hex_value=node['attributes']['hexvalue'],
-                    str_value=node['attributes']['value'],
-                    sub_type=node['attributes']['type'],
-                    token_type=node['attributes']['token'],
-                ))
+            if not isinstance(node, dict):
+                return
+
+            if node.get(self.keys.name) == 'Literal':
+                if self.v8 and node.get('typeDescriptions'):
+                    literals_nodes.add(Literal(
+                        hex_value=node.get('hexValue'),
+                        str_value=node.get('value'),
+                        sub_type=node.get('typeDescriptions').get('typeString'),
+                        token_type=node.get('kind', ),
+                    ))
+                elif not self.v8 and node.get('attributes'):
+                    literals_nodes.add(Literal(
+                        hex_value=node.get('attributes').get('hexvalue'),
+                        str_value=node.get('attributes').get('value'),
+                        sub_type=node.get('attributes').get('type'),
+                        token_type=node.get('attributes').get('token'),
+                    ))
+                li_list.append(node)
             else:
-                for child in node.get('children', []):
-                    if isinstance(child, dict):
-                        traverse(child)
+                for k, v in node.items():
+                    if isinstance(v, dict):
+                        traverse(v)
+                    if isinstance(v, list):
+                        for c in v:
+                            if isinstance(c, dict):
+                                traverse(c)
 
         root_node = self.solc_json_ast[contract_name]['ast']
         traverse(root_node)
-        from pprint import pprint
-        pprint(literals_nodes)
+        # from pprint import pprint
+        # pprint(literals_nodes)
         literals = dict(number=set(), string=set(), address=set(), other=set())
+
         for literal in literals_nodes:
             if literal.sub_type is None and literal.token_type == 'number':
                 if only_value and literal.str_value.isdecimal():
