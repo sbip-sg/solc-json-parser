@@ -1029,8 +1029,7 @@ class SolidityAst():
 
         root_node = self.solc_json_ast[contract_name]['ast']
         traverse(root_node)
-        # from pprint import pprint
-        # pprint(literals_nodes)
+
         literals = dict(number=set(), string=set(), address=set(), other=set())
 
         for literal in literals_nodes:
