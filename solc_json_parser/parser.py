@@ -988,50 +988,9 @@ class SolidityAst():
         '''Get deployment binary by hash of fully qualified contract / library name'''
         return self.get_any(self.qualified_name_from_hash(hsh), 'bin')
 
-    def get_literals(self, contract_name: str, only_value=False) -> dict:
-        """
-        Get all literals(number, address, string, other) in the contract.
-        for 'other' type, if only_value is True, return the string value
-        - `contract_name`: contract_name in string
-        - `only_value`: set to true to get only values, otherwise get all literal objects
-        """
-
-        # traverse the dictionary and get all the literals
-        literals_nodes = set()
-
-        def traverse(node):
-            if not isinstance(node, dict):
-                return
-
-            if node.get(self.keys.name) == 'Literal':
-                if self.v8 and node.get('typeDescriptions'):
-                    literals_nodes.add(Literal(
-                        hex_value=node.get('hexValue'),
-                        str_value=node.get('value'),
-                        sub_type=node.get('typeDescriptions').get('typeString'),
-                        token_type=node.get('kind', ),
-                    ))
-                elif not self.v8 and node.get('attributes'):
-                    literals_nodes.add(Literal(
-                        hex_value=node.get('attributes').get('hexvalue'),
-                        str_value=node.get('attributes').get('value'),
-                        sub_type=node.get('attributes').get('type'),
-                        token_type=node.get('attributes').get('token'),
-                    ))
-            else:
-                for k, v in node.items():
-                    if isinstance(v, dict):
-                        traverse(v)
-                    if isinstance(v, list):
-                        for c in v:
-                            if isinstance(c, dict):
-                                traverse(c)
-
-        root_node = self.solc_json_ast[contract_name]['ast']
-        traverse(root_node)
-
+    @staticmethod
+    def _process_literal_node(literals_nodes, only_value):
         literals = dict(number=set(), string=set(), address=set(), other=set())
-
         for literal in literals_nodes:
             if literal.sub_type is None and literal.token_type == 'number':
                 if only_value and literal.str_value.isdecimal():
@@ -1061,6 +1020,51 @@ class SolidityAst():
                     literals['other'].add(literal.str_value)
                 else:
                     literals['other'].add(literal)
+        return literals
+
+    def _traverse_nodes(self, node, literals_nodes):
+        if not isinstance(node, dict):
+            return
+
+        if node.get(self.keys.name) == 'Literal':
+            if self.v8 and node.get('typeDescriptions'):
+                literals_nodes.add(Literal(
+                    hex_value=node.get('hexValue'),
+                    str_value=node.get('value'),
+                    sub_type=node.get('typeDescriptions').get('typeString'),
+                    token_type=node.get('kind', ),
+                ))
+            elif not self.v8 and node.get('attributes'):
+                literals_nodes.add(Literal(
+                    hex_value=node.get('attributes').get('hexvalue'),
+                    str_value=node.get('attributes').get('value'),
+                    sub_type=node.get('attributes').get('type'),
+                    token_type=node.get('attributes').get('token'),
+                ))
+        else:
+            for k, v in node.items():
+                if isinstance(v, dict):
+                    self._traverse_nodes(v, literals_nodes)
+                if isinstance(v, list):
+                    for c in v:
+                        if isinstance(c, dict):
+                            self._traverse_nodes(c, literals_nodes)
+
+    def get_literals(self, contract_name: str, only_value=False) -> dict:
+        """
+        Get all literals(number, address, string, other) in the contract.
+        for 'other' type, if only_value is True, return the string value
+        - `contract_name`: contract_name in string
+        - `only_value`: set to true to get only values, otherwise get all literal objects
+        """
+
+        literals_nodes = set() # save data here
+        root_node = self.solc_json_ast[contract_name]['ast']
+
+        # traverse the dictionary and get all the literals recursively
+        self._traverse_nodes(root_node, literals_nodes)
+
+        literals = self._process_literal_node(literals_nodes, only_value)
 
         return literals
 
