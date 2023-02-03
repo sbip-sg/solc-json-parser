@@ -368,6 +368,12 @@ class TestParser(unittest.TestCase):
             ast = SolidityAst(f'{contracts_root}/dev/20_39_IPoolEvents_45678.sol', version=v)
             sub_test(ast)
 
+    def test_function_parsing(self):
+        ast = SolidityAst(f'tests/test_contracts/FunctionSignature.sol')
+        fn = ast.function_by_name('Test', 'test_func')
+        self.assertEqual('test_func(address)', fn.signature)
+        self.assertEqual({'onlyOwner'}, set(fn.modifiers))
+
     def test_multi_source_line_num_range(self):
         def sub_test(ast):
             functions = ast.functions_in_contract_by_name('Storage')

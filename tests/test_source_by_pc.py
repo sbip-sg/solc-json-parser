@@ -32,6 +32,12 @@ class TestSourceByPc(unittest.TestCase):
                      False,
                      [(278, 15),
                       (293, 16)],
+                     {'optimize': True, 'optimize_runs': 200}),
+            TestCase('./tests/test_contracts/Test.sol',
+                     'Test',
+                     False,
+                     [(200, 14),
+                      (218, 15)],
                      {'optimize': True, 'optimize_runs': 200})]
         for t in test_cases:
             ast = SolidityAst(t.source, solc_options=t.solc_options)
