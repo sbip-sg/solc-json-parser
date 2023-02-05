@@ -992,34 +992,37 @@ class SolidityAst():
     def _process_literal_node(literals_nodes, only_value):
         literals = dict(number=set(), string=set(), address=set(), other=set())
         for literal in literals_nodes:
-            if literal.sub_type is None and literal.token_type == 'number':
-                if only_value and literal.str_value.isdecimal():
-                    literals['number'].add(int(literal.str_value))
+            try:
+                if literal.sub_type is None and literal.token_type == 'number':
+                    if only_value and literal.str_value.isdecimal():
+                        literals['number'].add(int(literal.str_value))
+                    else:
+                        literals['number'].add(literal)
+                elif literal.sub_type.startswith("address"):
+                    if only_value:
+                        literals['address'].add(literal.str_value)
+                    else:
+                        literals['address'].add(literal)
+                elif literal.sub_type.startswith("int"):
+                    if only_value:
+                        literals['number'].add(int(literal.sub_type.split(' ')[1]))
+                    else:
+                        literals['number'].add(literal)
+                # check if string in token_type, ignore case
+                elif literal.sub_type.startswith("literal_string"):
+                    if only_value:
+                        literals['string'].add(literal.str_value)
+                    else:
+                        literals['string'].add(literal)
+                elif literal.sub_type.startswith("bool"):
+                    continue
                 else:
-                    literals['number'].add(literal)
-            elif literal.sub_type.startswith("address"):
-                if only_value:
-                    literals['address'].add(literal.str_value)
-                else:
-                    literals['address'].add(literal)
-            elif literal.sub_type.startswith("int"):
-                if only_value:
-                    literals['number'].add(int(literal.sub_type.split(' ')[1]))
-                else:
-                    literals['number'].add(literal)
-            # check if string in token_type, ignore case
-            elif literal.sub_type.startswith("literal_string"):
-                if only_value:
-                    literals['string'].add(literal.str_value)
-                else:
-                    literals['string'].add(literal)
-            elif literal.sub_type.startswith("bool"):
+                    if only_value:
+                        literals['other'].add(literal.str_value)
+                    else:
+                        literals['other'].add(literal)
+            except:
                 continue
-            else:
-                if only_value:
-                    literals['other'].add(literal.str_value)
-                else:
-                    literals['other'].add(literal)
         return literals
 
     def _traverse_nodes(self, node, literals_nodes):
