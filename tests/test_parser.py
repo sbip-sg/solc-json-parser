@@ -418,6 +418,9 @@ class TestParser(unittest.TestCase):
 
         for ast in [ast7, ast8]:
             literals = ast.get_literals("Test", only_value=True)
-            self.assertEqual(14, len(literals['number']))
-            self.assertEqual(8,  len(literals['string']))
+            self.assertEqual(15, len(literals['number']))
+            self.assertEqual(6,  len(literals['string']))
             self.assertEqual(2,  len(literals['address']))
+
+            literals = ast.get_literals("BaseTest", only_value=True)
+            self.assertEqual(2,  len(literals['string']))
