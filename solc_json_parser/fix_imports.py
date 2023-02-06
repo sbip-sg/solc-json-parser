@@ -27,10 +27,15 @@ def search_sol_in_lib(cwd: str, lib_sol: str):
 def search_sol_by_filename(cwd, name, complete_sol, sols):
     file_name = lambda p: p.split(os.path.sep)[-1]
 
-
     for f in sols:
         fname = file_name(f)
-        if name in [fname, fname[6:]]:
+        # most of the filename has the format of `dd_dd_wwww.sol`
+        # but sometimes it can be `dd(d)_ddd_wwww.sol`, e.g. `101_155_ERC20.sol` or `10_155_ERC20.sol`
+
+        # find the position of second `_`
+        pos = fname.find('_', fname.find('_') + 1) + 1
+
+        if name in [fname, fname[pos:]]:
             return fname
 
     return search_sol_in_lib(cwd, complete_sol)
