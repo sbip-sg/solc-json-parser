@@ -424,3 +424,9 @@ class TestParser(unittest.TestCase):
 
             literals = ast.get_literals("BaseTest", only_value=True)
             self.assertEqual(2,  len(literals['string']))
+
+        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol')
+        literals = ast.get_literals("Initializable", only_value=True)
+        self.assertEqual(1, len(literals['number']))
+        self.assertEqual(3, len(literals['string']))
+

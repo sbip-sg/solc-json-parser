@@ -1075,9 +1075,16 @@ class SolidityAst():
 
         literals_nodes = set() # save data here
         root_node = self.solc_json_ast[contract_name]['ast']
+        contract_node = None
+        for i, node in enumerate(root_node[self.keys.children]):
+            if node[self.keys.name] == "ContractDefinition":
+                info_node = node if self.v8 else node.get('attributes')
+                if info_node['name'] == contract_name:
+                    contract_node = node
+                    break
 
         # traverse the dictionary and get all the literals recursively
-        self._traverse_nodes(root_node, literals_nodes)
+        self._traverse_nodes(contract_node, literals_nodes)
 
         literals = self._process_literal_node(literals_nodes, only_value)
 
