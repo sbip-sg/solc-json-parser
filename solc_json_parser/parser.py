@@ -1016,6 +1016,8 @@ class SolidityAst():
                     if only_value:
                         if literal.str_value.startswith('0x'):
                             literals['number'].add(int(literal.str_value, 16))
+                        elif literal.sub_type.split()[1].isdecimal():
+                            literals['number'].add(int(literal.sub_type.split()[1]))
                         else:
                             literals['number'].add(int(literal.str_value))
                     else:
