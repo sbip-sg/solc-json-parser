@@ -112,5 +112,6 @@ def abi_from_binary(binary: str, window_size=20) -> Set[str]:
         if i - window_start > window_size:
             window_start = 0
 
-    results.remove('ffffffff')
+    if 'ffffffff' in results:
+        results.remove('ffffffff')
     return results
