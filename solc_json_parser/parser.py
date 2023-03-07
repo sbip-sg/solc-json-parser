@@ -158,14 +158,14 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
-def get_increased_version(current_version: str) -> str:
+def get_increased_version(current_version: str, install: bool=True) -> str:
     """
     :param current_version:
     :return: next solc valid version, e.g. 0.5.10 -> 0.5.11
     """
     # convert current version str to Version object
     current_version_obj = Version(current_version)
-    next_version = select_available_version(str(current_version_obj.next_patch()), install=True)
+    next_version = select_available_version(str(current_version_obj.next_patch()), install=install)
     if not next_version:
         raise SolidityAstError(f'No next version available for {current_version}')
     return str(next_version)
@@ -185,7 +185,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None, try_install_solc=True):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -201,6 +201,8 @@ class SolidityAst():
         When true, you need to call `build()` explicitly to compile and parse the contract.
     solc_outputs: List, optional
         When non empty, only the specified outputs will be returned by the solc compiler.
+    no_install: bool, optional
+        When true, will not check and install the solc
 
     solc_options: Dict, optional
     The optionsl passed to the solc compiler, the following options are supports:
@@ -246,6 +248,7 @@ class SolidityAst():
                 self.source = f.read()
 
         self.original_compilation_output :Optional[Dict] = None
+        self.try_install_solc = try_install_solc
         self.solc_outputs = solc_outputs
         self.solc_options = solc_options
         self.import_remappings = solc_options.get('import_remappings')
@@ -562,7 +565,8 @@ class SolidityAst():
     def compile(self):
         current_working_dir = os.getcwd()
         try:
-            solcx.install_solc(self.exact_version)
+            if self.try_install_solc:
+                solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
             if self.root_path:
                 os.chdir(self.root_path)
@@ -583,7 +587,7 @@ class SolidityAst():
         except Exception as e:
             if self.retry_num > 0:
                 self.retry_num -= 1
-                self.exact_version = get_increased_version(self.exact_version)
+                self.exact_version = get_increased_version(self.exact_version, install=self.try_install_solc)
                 self.prepare_by_version()
                 self.compile()
             else:
