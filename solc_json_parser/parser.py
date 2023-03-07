@@ -175,6 +175,8 @@ class SolidityAstError(ValueError):
     pass
 
 
+DEFAULT_OPTIMIZER = {'enabled': True, 'runs': 200}
+
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
@@ -183,7 +185,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -195,7 +197,10 @@ class SolidityAst():
         Note that SolidityAst will try to compile the contract starting from the lowest detected solc version first, increase the solc version each time when compilation fails.
     retry_num: int, optional
         Maximum number of solc versions to try to compile the contract
-
+    lazy: bool, optional
+        When true, you need to call `build()` explicitly to compile and parse the contract.
+    solc_outputs: List, optional
+        When non empty, only the specified outputs will be returned by the solc compiler.
 
     solc_options: Dict, optional
     The optionsl passed to the solc compiler, the following options are supports:
@@ -241,6 +246,7 @@ class SolidityAst():
                 self.source = f.read()
 
         self.original_compilation_output :Optional[Dict] = None
+        self.solc_outputs = solc_outputs
         self.solc_options = solc_options
         self.import_remappings = solc_options.get('import_remappings')
         base_path = solc_options.get('base_path')
@@ -248,14 +254,17 @@ class SolidityAst():
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
-        self.version_key: str     = self._get_version_key()
-        self.keys: addict.Dict    = v_keys[self.version_key]
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
-        self.solc_compile_outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
-        if self.v8:
-            self.solc_compile_outputs += ['generated-sources-runtime', 'generated-sources']
 
+        self.version_key: str     = self._get_version_key()
+        self.keys: addict.Dict    = v_keys[self.version_key]
+        self.prepare_by_version()
+
+        if not lazy:
+            self.build()
+
+    def build(self):
         self.compile()
         self.contracts_dict: Dict = self._parse()
 
@@ -530,6 +539,26 @@ class SolidityAst():
         else:
             return None
 
+    def prepare_by_version(self):
+        """Prepare compilation outputs, etc by the current `exact_version`"""
+        ver = Version(self.exact_version)
+        outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
+
+        self.version_key: str     = self._get_version_key()
+        self.keys: addict.Dict    = v_keys[self.version_key]
+        # clear cache
+        try: del self.v8
+        except AttributeError: pass
+
+        if ver >= Version("0.6.5"):
+            outputs.append('storage-layout')
+
+        if self.v8:
+            outputs += ['generated-sources-runtime', 'generated-sources', ]
+
+        self.solc_compile_outputs = outputs
+
+
     def compile(self):
         current_working_dir = os.getcwd()
         try:
@@ -542,7 +571,7 @@ class SolidityAst():
             compiler_options = dict(self.solc_options)
             overwritten_options = dict(base_path=self.base_path,
                                        import_remappings=self.import_remappings,
-                                       output_values=self.solc_compile_outputs,
+                                       output_values=self.solc_outputs or self.solc_compile_outputs,
                                        solc_version=self.exact_version)
             compiler_options.update(overwritten_options)
             if self.compile_type == "file":
@@ -555,6 +584,7 @@ class SolidityAst():
             if self.retry_num > 0:
                 self.retry_num -= 1
                 self.exact_version = get_increased_version(self.exact_version)
+                self.prepare_by_version()
                 self.compile()
             else:
                 raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
