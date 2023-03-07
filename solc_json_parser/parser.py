@@ -185,7 +185,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -197,7 +197,10 @@ class SolidityAst():
         Note that SolidityAst will try to compile the contract starting from the lowest detected solc version first, increase the solc version each time when compilation fails.
     retry_num: int, optional
         Maximum number of solc versions to try to compile the contract
-
+    lazy: bool, optional
+        When true, you need to call `build()` explicitly to compile and parse the contract.
+    solc_outputs: List, optional
+        When non empty, only the specified outputs will be returned by the solc compiler.
 
     solc_options: Dict, optional
     The optionsl passed to the solc compiler, the following options are supports:
@@ -243,6 +246,7 @@ class SolidityAst():
                 self.source = f.read()
 
         self.original_compilation_output :Optional[Dict] = None
+        self.solc_outputs = solc_outputs
         self.solc_options = solc_options
         self.import_remappings = solc_options.get('import_remappings')
         base_path = solc_options.get('base_path')
@@ -567,7 +571,7 @@ class SolidityAst():
             compiler_options = dict(self.solc_options)
             overwritten_options = dict(base_path=self.base_path,
                                        import_remappings=self.import_remappings,
-                                       output_values=self.solc_compile_outputs,
+                                       output_values=self.solc_outputs or self.solc_compile_outputs,
                                        solc_version=self.exact_version)
             compiler_options.update(overwritten_options)
             if self.compile_type == "file":
