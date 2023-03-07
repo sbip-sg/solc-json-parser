@@ -175,6 +175,8 @@ class SolidityAstError(ValueError):
     pass
 
 
+DEFAULT_OPTIMIZER = {'enabled': True, 'runs': 200}
+
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
@@ -183,7 +185,7 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -248,14 +250,17 @@ class SolidityAst():
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
         self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
-        self.version_key: str     = self._get_version_key()
-        self.keys: addict.Dict    = v_keys[self.version_key]
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
-        self.solc_compile_outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
-        if self.v8:
-            self.solc_compile_outputs += ['generated-sources-runtime', 'generated-sources']
 
+        self.version_key: str     = self._get_version_key()
+        self.keys: addict.Dict    = v_keys[self.version_key]
+        self.prepare_by_version()
+
+        if not lazy:
+            self.build()
+
+    def build(self):
         self.compile()
         self.contracts_dict: Dict = self._parse()
 
@@ -530,6 +535,26 @@ class SolidityAst():
         else:
             return None
 
+    def prepare_by_version(self):
+        """Prepare compilation outputs, etc by the current `exact_version`"""
+        ver = Version(self.exact_version)
+        outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
+
+        self.version_key: str     = self._get_version_key()
+        self.keys: addict.Dict    = v_keys[self.version_key]
+        # clear cache
+        try: del self.v8
+        except AttributeError: pass
+
+        if ver >= Version("0.6.5"):
+            outputs.append('storage-layout')
+
+        if self.v8:
+            outputs += ['generated-sources-runtime', 'generated-sources', ]
+
+        self.solc_compile_outputs = outputs
+
+
     def compile(self):
         current_working_dir = os.getcwd()
         try:
@@ -555,6 +580,7 @@ class SolidityAst():
             if self.retry_num > 0:
                 self.retry_num -= 1
                 self.exact_version = get_increased_version(self.exact_version)
+                self.prepare_by_version()
                 self.compile()
             else:
                 raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
