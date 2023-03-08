@@ -143,7 +143,6 @@ def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     Detect solc version from a flatten source. Input can be a single file or source code string
     '''
     versions = get_solc_candidates(source_or_source_file)
-    print(f'versions: {versions}')
     return versions[-1] if versions else None
 
 
@@ -265,7 +264,8 @@ class SolidityAst():
         self.base_path = os.path.abspath(base_path) if base_path else None
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
-        self.solc_candidates = get_solc_candidates(self.source) or get_all_installable_candidates()
+        self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_candidates()
+        self.solc_candidates = list(self.allowed_solc_versions)
         self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols

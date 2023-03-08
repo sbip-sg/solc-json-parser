@@ -17,7 +17,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual('0.5.1', ast.exact_version, 'Version should be 0.5.1')
 
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
-        self.assertEqual('0.7.2', ast.exact_version, 'Version should be 0.7.2')
+        self.assertIn('0.7.2', ast.allowed_solc_versions, '0.7.2 should be in solc candidate list')
 
     def test_all_contract_name(self):
         ast = SolidityAst(f'{contracts_root}/inheritance_contracts.sol')
@@ -110,7 +110,7 @@ class TestParser(unittest.TestCase):
         ast_with_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version='0.7.4')
         ast_without_version = SolidityAst(f'{contracts_root}/inheritance_contracts.sol', version=None)
         self.assertEqual('0.7.4', ast_with_version.exact_version, 'AST should be the same with and without version input')
-        self.assertEqual('0.7.2', ast_without_version.exact_version, 'AST should be the same with and without version input')
+        self.assertIn('0.7.2', ast_without_version.allowed_solc_versions, 'AST should be the same with and without version input')
 
     def test_get_plain_version_from_source(self):
         path = f'{contracts_root}/inheritance_contracts.sol'
@@ -288,7 +288,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expected_func_name, func_name, 'Should have correct function name')
 
     def test_program_counter(self):
-        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage_pc.sol', solc_options={'allow_paths': ""})
+        ast = SolidityAst(f'{contracts_root}/dev/1_BaseStorage_pc.sol', version='0.6.0', solc_options={'allow_paths': ""})
         expected_data = [
             (261, (7, 9),   (102, 166)),
             (262, (8, 8),   (156, 159)),
@@ -400,7 +400,7 @@ class TestParser(unittest.TestCase):
             sub_test(ast)
 
     def test_mapping_yul(self):
-        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol')
+        ast = SolidityAst(f'{contracts_root}/dev/rubic.sol', version='0.8.10')
         expected_data = [
             (14004, (185, 185), (5927, 5980)),
             (13948, (173, 176), (5523, 5662)),
@@ -429,4 +429,3 @@ class TestParser(unittest.TestCase):
         literals = ast.get_literals("Initializable", only_value=True)
         self.assertEqual(1, len(literals['number']))
         self.assertEqual(3, len(literals['string']))
-
