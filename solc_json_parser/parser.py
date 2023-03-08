@@ -74,7 +74,7 @@ def get_in(d, key: Any, *nkeys) -> Any:
     return nd
 
 
-def get_candidates():
+def get_all_installable_versions():
     '''
     Returns a cached list of solc versions available for install,
     version list is sorted in ascending order
@@ -85,26 +85,6 @@ def get_candidates():
     else:
         INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
         return INSTALLABLE_VERSION
-
-
-def select_available_version(version_str: str, install=False) -> Optional[str]:
-    '''Switch to current or the next semantic version available to use. Returns the version selected.'''
-    version = Version(version_str)
-    candidates = get_candidates()
-    try:
-        chosen = next(v for v in candidates if v >= version)
-    except StopIteration:
-        logging.error(f'No candidate version available for {version}')
-        return None
-    ver = str(chosen)
-
-    if ver and install:
-        solc_bin = f'{solcx.get_solcx_install_folder()}/solc-v{ver}'
-        if not os.path.exists(solc_bin):
-            solcx.install_solc(chosen)
-
-    return ver
-
 
 def version_str_from_line(line) -> Optional[str]:
     '''
@@ -129,23 +109,21 @@ def version_str_from_source(source_or_source_file: str) -> Optional[str]:
 
     return ' '.join(set(versions))
 
+def get_solc_candidates(source_or_source_file: str) -> List[str]:
+    merged_version = version_str_from_source(source_or_source_file)
+
+    if not merged_version:
+        return []
+
+    spec = semantic_version.NpmSpec(merged_version)
+    return [str(v) for v in spec.filter(get_all_installable_versions())]
+
 def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     '''
     Detect solc version from a flatten source. Input can be a single file or source code string
     '''
-    merged_version = version_str_from_source(source_or_source_file)
-
-    if not merged_version:
-        return None
-
-    spec = semantic_version.NpmSpec(merged_version)
-    candidates = get_candidates()
-
-    # if we want the best candidate, this normally means higher version
-    # ver = spec.select(candidates)
-
-    # if we want the lowest version, will throw if no version matches
-    return str(next(spec.filter(candidates)))
+    versions = get_solc_candidates(source_or_source_file)
+    return versions[-1] if versions else None
 
 
 def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
@@ -158,17 +136,24 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     return {k: v[0] for m in syms for k, v in m.items()}
 
 
-def get_increased_version(current_version: str) -> str:
-    """
-    :param current_version:
-    :return: next solc valid version, e.g. 0.5.10 -> 0.5.11
-    """
-    # convert current version str to Version object
-    current_version_obj = Version(current_version)
-    next_version = select_available_version(str(current_version_obj.next_patch()), install=True)
-    if not next_version:
-        raise SolidityAstError(f'No next version available for {current_version}')
-    return str(next_version)
+def find_next_version_in_candidates(current_version: str, solc_candidates: List[str]) -> Tuple[str, List[str]]:
+    """Try to get the next version"""
+    ver = Version(current_version)
+    try_next_version = Version(major=ver.major, minor= ver.minor - 1, patch=0)
+    print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
+    version = None
+    # print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
+    if str(try_next_version) in solc_candidates:
+        version = str(try_next_version)
+        solc_candidates = [v for v in solc_candidates if Version(v) < try_next_version]
+
+    elif solc_candidates:
+        version = str(solc_candidates[-1])
+        solc_candidates = solc_candidates[:-1]
+    if not version:
+        raise ValueError(f'No next solc version available for {current_version}')
+    return version, solc_candidates
+
 
 
 class SolidityAstError(ValueError):
@@ -185,7 +170,8 @@ class SolidityAst():
     FUNC_VISIBILITY_ALL = frozenset(('external', 'private', 'internal', 'public'))
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
-    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None):
+    def __init__(self, contract_source_path: Optional[str], version=None, retry_num=None, standard_json: Optional[Dict]=None, standard_json_str: Optional[str]=None,
+                 solc_options={}, lazy=False, solc_outputs=None, try_install_solc=True):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -201,6 +187,8 @@ class SolidityAst():
         When true, you need to call `build()` explicitly to compile and parse the contract.
     solc_outputs: List, optional
         When non empty, only the specified outputs will be returned by the solc compiler.
+    no_install: bool, optional
+        When true, will not check and install the solc
 
     solc_options: Dict, optional
     The optionsl passed to the solc compiler, the following options are supports:
@@ -246,6 +234,7 @@ class SolidityAst():
                 self.source = f.read()
 
         self.original_compilation_output :Optional[Dict] = None
+        self.try_install_solc = try_install_solc
         self.solc_outputs = solc_outputs
         self.solc_options = solc_options
         self.import_remappings = solc_options.get('import_remappings')
@@ -253,7 +242,9 @@ class SolidityAst():
         self.base_path = os.path.abspath(base_path) if base_path else None
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
-        self.exact_version: str   = version or detect_solc_version(self.source) or consts.DEFAULT_SOLC_VERSION
+        self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_versions()
+        self.solc_candidates = list(self.allowed_solc_versions)
+        self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
 
@@ -562,7 +553,8 @@ class SolidityAst():
     def compile(self):
         current_working_dir = os.getcwd()
         try:
-            solcx.install_solc(self.exact_version)
+            if self.try_install_solc:
+                solcx.install_solc(self.exact_version)
             solcx.set_solc_version(self.exact_version)
             if self.root_path:
                 os.chdir(self.root_path)
@@ -583,7 +575,8 @@ class SolidityAst():
         except Exception as e:
             if self.retry_num > 0:
                 self.retry_num -= 1
-                self.exact_version = get_increased_version(self.exact_version)
+                # self.exact_version = get_increased_version(self.exact_version, install=self.try_install_solc)
+                self.exact_version, self.solc_candidates = find_next_version_in_candidates(self.exact_version, self.solc_candidates)
                 self.prepare_by_version()
                 self.compile()
             else:
