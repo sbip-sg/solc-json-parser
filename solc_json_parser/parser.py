@@ -74,7 +74,7 @@ def get_in(d, key: Any, *nkeys) -> Any:
     return nd
 
 
-def get_all_installable_candidates():
+def get_all_installable_versions():
     '''
     Returns a cached list of solc versions available for install,
     version list is sorted in ascending order
@@ -85,26 +85,6 @@ def get_all_installable_candidates():
     else:
         INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
         return INSTALLABLE_VERSION
-
-
-def select_available_version(version_str: str, install=False) -> Optional[str]:
-    '''Switch to current or the next semantic version available to use. Returns the version selected.'''
-    version = Version(version_str)
-    candidates = get_all_installable_candidates()
-    try:
-        chosen = next(v for v in candidates if v >= version)
-    except StopIteration:
-        logging.error(f'No candidate version available for {version}')
-        return None
-    ver = str(chosen)
-
-    if ver and install:
-        solc_bin = f'{solcx.get_solcx_install_folder()}/solc-v{ver}'
-        if not os.path.exists(solc_bin):
-            solcx.install_solc(chosen)
-
-    return ver
-
 
 def version_str_from_line(line) -> Optional[str]:
     '''
@@ -136,7 +116,7 @@ def get_solc_candidates(source_or_source_file: str) -> List[str]:
         return []
 
     spec = semantic_version.NpmSpec(merged_version)
-    return [str(v) for v in spec.filter(get_all_installable_candidates())]
+    return [str(v) for v in spec.filter(get_all_installable_versions())]
 
 def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     '''
@@ -155,13 +135,11 @@ def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
-def decrement_minor_version(ver: Version, inc_major: int, inc_minor: int) -> Version:
-    return Version(major=(ver.major + inc_major), minor= ver.minor + inc_minor, patch=0)
 
-def find_next_version_in_candidates(current_version: str, solc_candidates: List[str], next_version=decrement_minor_version) -> Tuple[str, List[str]]:
+def find_next_version_in_candidates(current_version: str, solc_candidates: List[str]) -> Tuple[str, List[str]]:
     """Try to get the next version"""
     ver = Version(current_version)
-    try_next_version =  next_version(ver, 0, -1)
+    try_next_version = Version(major=ver.major, minor= ver.minor - 1, patch=0)
     print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
     version = None
     # print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
@@ -264,7 +242,7 @@ class SolidityAst():
         self.base_path = os.path.abspath(base_path) if base_path else None
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
-        self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_candidates()
+        self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_versions()
         self.solc_candidates = list(self.allowed_solc_versions)
         self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
