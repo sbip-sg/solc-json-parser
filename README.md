@@ -20,3 +20,8 @@ ast.source_by_pc('BlackScholesEstimate', 92)
 # Get deployment code by contract name
 ast.get_deploy_bin_by_contract_name('BlackScholesEstimate')
 ```
+
+## Note
+
+- This library only supports detecting Solidity version newer than or equal to
+  `v0.4.11`. This is due to the limitation of the base library [py-solc-x](https://solcx.readthedocs.io/en/latest/).
