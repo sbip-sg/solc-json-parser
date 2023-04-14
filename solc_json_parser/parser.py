@@ -11,7 +11,7 @@ import re
 from typing import Collection, Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
-
+from pathlib import Path # for automatic getting solc-select binary, remove if not neccessary
 try:
     from fields import Field, Function, ContractData, Modifier, Event, Literal
     from version_cfg import v_keys
@@ -83,7 +83,8 @@ def get_all_installable_versions():
     if INSTALLABLE_VERSION:
         return INSTALLABLE_VERSION
     else:
-        INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
+        OLD_SOLC_VERSION = list( map( lambda x: Version('0.4.' + str(x)), range(0, 11)))
+        INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions() + OLD_SOLC_VERSION)
         return INSTALLABLE_VERSION
 
 def version_str_from_line(line) -> Optional[str]:
@@ -132,6 +133,8 @@ def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 
+def symbols_to_ids_from_old_solc(ast: Dict[Any, Any]) -> Dict[str, int]:
+    ...
 
 def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
     syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
@@ -173,7 +176,7 @@ class SolidityAst():
     FUNC_VISIBILITY_NON_PRIVATE = frozenset(('external', 'internal', 'public'))
 
     def __init__(self, contract_source_path: Optional[str], version=None, retry_num=None, standard_json: Optional[Dict]=None, standard_json_str: Optional[str]=None,
-                 solc_options={}, lazy=False, solc_outputs=None, try_install_solc=True):
+                 solc_options={}, lazy=False, solc_outputs=None, try_install_solc=True, solc_binary_path=None):
         '''
     Compile the input contract and create a SolidityAst object.
 
@@ -247,6 +250,7 @@ class SolidityAst():
         self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_versions()
         self.solc_candidates = list(self.allowed_solc_versions)
         self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
+        self.solc_binary_path: str = solc_binary_path # override everything, use the given solc bin
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
         self.id_to_symbols: Dict[int, str] = {} # reverse mapping of exported_symbols
 
@@ -270,6 +274,9 @@ class SolidityAst():
             return f"v{self.exact_version[2]}"
         else:
             return "v8"
+
+    def is_old_solc(self):
+        return Version(self.exact_version) < Version('0.4.11')
 
     def _get_base_contracts(self, data: List[Dict]) -> List:
         base_contracts = []
@@ -555,9 +562,16 @@ class SolidityAst():
     def compile(self):
         current_working_dir = os.getcwd()
         try:
-            if self.try_install_solc:
-                solcx.install_solc(self.exact_version)
-            solcx.set_solc_version(self.exact_version)
+            if self.is_old_solc() and not self.solc_binary_path:
+                # code from https://github.com/crytic/solc-select/blob/dev/solc_select/constants.py
+                HOME_DIR = Path.home()
+                SOLC_SELECT_DIR = HOME_DIR.joinpath(".solc-select").joinpath("artifacts")
+                self.solc_binary_path = os.path.join(SOLC_SELECT_DIR, f"solc-{self.exact_version}/solc-{self.exact_version}")
+                print ("Using solc binary from solc-select: ", self.solc_binary_path)
+            else:
+                if self.try_install_solc:
+                    solcx.install_solc(self.exact_version)
+                solcx.set_solc_version(self.exact_version)
             if self.root_path:
                 os.chdir(self.root_path)
                 self.root_path = os.getcwd()
@@ -567,6 +581,8 @@ class SolidityAst():
                                        import_remappings=self.import_remappings,
                                        output_values=self.solc_outputs or self.solc_compile_outputs,
                                        solc_version=self.exact_version)
+            if self.solc_binary_path:
+                overwritten_options['solc_binary'] = self.solc_binary_path
             compiler_options.update(overwritten_options)
             if self.compile_type == "file":
                 out = solcx.compile_files(self.file_path, **compiler_options)
