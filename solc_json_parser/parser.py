@@ -92,6 +92,8 @@ def version_str_from_line(line) -> Optional[str]:
     '''
     if line.strip().startswith('pragma') and 'solidity' in line:
         ver = line.strip().split(maxsplit=2)[-1].split(';', maxsplit=1)[0]
+        if 'solidity' in ver:
+            ver = ver.split('solidity', maxsplit=1)[-1]
         ver = re.sub(r'([\^>=<~]+)\s+', r'\1', ver)
         return re.sub(r'(\.0+)', '.0', ver)
     return None
@@ -456,18 +458,19 @@ class SolidityAst():
         modifiers = []
         events = []
         keys = self.keys
-        for node in node.get(keys.children):
-            if node[keys.name] == "FunctionDefinition":
-                functions.append(self._process_function(node))
-            elif node[keys.name] == "VariableDeclaration":
-                fields.append(self._process_field(node))
-            elif node[keys.name] == "ModifierDefinition":
-                modifiers.append(self._process_modifier(node))
-            elif node[keys.name] == "EventDefinition":
-                events.append(self._process_event(node))
-            else:
-                # not implemented for other types
-                pass
+        if node.get(keys.children):
+            for node in node.get(keys.children):
+                if node[keys.name] == "FunctionDefinition":
+                    functions.append(self._process_function(node))
+                elif node[keys.name] == "VariableDeclaration":
+                    fields.append(self._process_field(node))
+                elif node[keys.name] == "ModifierDefinition":
+                    modifiers.append(self._process_modifier(node))
+                elif node[keys.name] == "EventDefinition":
+                    events.append(self._process_event(node))
+                else:
+                    # not implemented for other types
+                    pass
 
         return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id, events)
 
