@@ -458,19 +458,18 @@ class SolidityAst():
         modifiers = []
         events = []
         keys = self.keys
-        if node.get(keys.children):
-            for node in node.get(keys.children):
-                if node[keys.name] == "FunctionDefinition":
-                    functions.append(self._process_function(node))
-                elif node[keys.name] == "VariableDeclaration":
-                    fields.append(self._process_field(node))
-                elif node[keys.name] == "ModifierDefinition":
-                    modifiers.append(self._process_modifier(node))
-                elif node[keys.name] == "EventDefinition":
-                    events.append(self._process_event(node))
-                else:
-                    # not implemented for other types
-                    pass
+        for node in node.get(keys.children, []):
+            if node[keys.name] == "FunctionDefinition":
+                functions.append(self._process_function(node))
+            elif node[keys.name] == "VariableDeclaration":
+                fields.append(self._process_field(node))
+            elif node[keys.name] == "ModifierDefinition":
+                modifiers.append(self._process_modifier(node))
+            elif node[keys.name] == "EventDefinition":
+                events.append(self._process_event(node))
+            else:
+                # not implemented for other types
+                pass
 
         return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id, events)
 
