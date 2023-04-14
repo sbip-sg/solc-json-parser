@@ -11,6 +11,7 @@ import re
 from typing import Collection, Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
+from solc_detect.lib import PragmaParser
 
 try:
     from fields import Field, Function, ContractData, Modifier, Event, Literal
@@ -109,14 +110,22 @@ def version_str_from_source(source_or_source_file: str) -> Optional[str]:
 
     return ' '.join(set(versions))
 
-def get_solc_candidates(source_or_source_file: str) -> List[str]:
-    merged_version = version_str_from_source(source_or_source_file)
+def get_solc_candidates(content: str) -> List[str]:
+    # merged_version = version_str_from_source(source_or_source_file)
+    # if not merged_version:
+    #     return []
 
-    if not merged_version:
+    # spec = semantic_version.NpmSpec(merged_version)
+    # return [str(v) for v in spec.filter(get_all_installable_versions())]
+    try:
+        parser = PragmaParser(content=content)
+        valid_versions = parser.valid_versions()
+        spec = semantic_version.NpmSpec(' '.join(valid_versions))
+        return [str(v) for v in spec.filter(get_all_installable_versions())]
+    except:
+        import traceback
+        traceback.print_exc()
         return []
-
-    spec = semantic_version.NpmSpec(merged_version)
-    return [str(v) for v in spec.filter(get_all_installable_versions())]
 
 def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     '''
