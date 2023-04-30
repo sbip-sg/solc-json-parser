@@ -116,7 +116,7 @@ def get_solc_candidates(source_or_source_file: str) -> List[str]:
 
     if not merged_version:
         return []
-
+    merged_version = " ".join(merged_version.split()) #remove extra spaces
     spec = semantic_version.NpmSpec(merged_version)
     return [str(v) for v in spec.filter(get_all_installable_versions())]
 
