@@ -26,9 +26,17 @@ def simplify_version(s):
 
 def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin):
     '''
-    Compile standard input json and parse output as json
+    Compile standard input json and parse output as json.
+    Parameters:
+        version: solc version. Example: 0.8.13
+        input_json: standard json input
+        solc_bin_resolver: a function takes a solc version string and returns a full path to solc executable
     '''
     solc = solc_bin_resolver(version)
+
+    if not os.path.exists(solc):
+        raise Exception(f'solc not found at: {solc}, please download all solc binaries first or provide your `solc_bin_resolver` function')
+
     solc_output = subprocess.check_output(
         [solc, "--standard-json",],
         input=json.dumps(input_json),

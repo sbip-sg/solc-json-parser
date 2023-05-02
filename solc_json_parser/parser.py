@@ -1,168 +1,20 @@
 import copy
 from operator import itemgetter
 from semantic_version import Version
-import semantic_version
-import logging
 import addict
 import solcx
-import json
 import os
-import re
-from typing import Collection, Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property, cache, reduce
-from Crypto.Hash import keccak
-
-try:
-    from fields import Field, Function, ContractData, Modifier, Event, Literal
-    from version_cfg import v_keys
-    import consts
-except:
-    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event, Literal
-    from solc_json_parser.version_cfg import v_keys
-    import solc_json_parser.consts
-
-SOLC_JSON_AST_FOLDER = "./solc_json_ast"
-PARSED_JSON = "./parsed_json"
-
-INSTALLABLE_VERSION = []
-
-INTERFACE_OR_LIB_KIND = set(['interface', 'library'])
-
-DEPLOY_START_OPCODES = [
-    # For solidity 0.4.23 and above
-    [
-        "PUSH1",
-        "0x80",
-        "PUSH1",
-        "0x40",
-        "MSTORE",
-    ],
-    # For lower solidity version
-    [
-        "PUSH1",
-        "0x60",
-        "PUSH1",
-        "0x40",
-        "MSTORE",
-    ],
-]
-
-def keccak256(s: str) -> str:
-    k = keccak.new(digest_bits=256)
-    k.update(s.encode())
-    return k.hexdigest()
-
-def get_by_index(lst: Union[List, Tuple], idx: int):
-    '''Get by index from a list, returns None if the index is out of range '''
-    if len(lst) > idx:
-        return lst[idx]
-    return None
-
-
-def get_in(d, key: Any, *nkeys) -> Any:
-    '''Get in nested datastructure by keys. Only dictionary, tuple and
-    list are supported'''
-    try:
-        nd = d.get(key)
-    except Exception:
-        if type(key) is int:
-            nd = get_by_index(d, key)
-        else:
-            return None
-    if len(nkeys) > 0 and nd:
-        return get_in(nd, *nkeys)
-    return nd
-
-
-def get_all_installable_versions():
-    '''
-    Returns a cached list of solc versions available for install,
-    version list is sorted in ascending order
-    '''
-    global INSTALLABLE_VERSION
-    if INSTALLABLE_VERSION:
-        return INSTALLABLE_VERSION
-    else:
-        INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
-        return INSTALLABLE_VERSION
-
-def version_str_from_line(line) -> Optional[str]:
-    '''
-    Extract solc version string from input line
-    '''
-    if line.strip().startswith('pragma') and 'solidity' in line:
-        ver = line.strip().split(maxsplit=2)[-1].split(';', maxsplit=1)[0]
-        if 'solidity' in ver:
-            ver = ver.split('solidity', maxsplit=1)[-1]
-        ver = re.sub(r'([\^>=<~]+)\s+', r'\1', ver)
-        return re.sub(r'(\.0+)', '.0', ver)
-    return None
-
-
-def version_str_from_source(source_or_source_file: str) -> Optional[str]:
-    inputs = source_or_source_file.split('\n') if '\n' in source_or_source_file else open(source_or_source_file, 'r')
-
-    # Get version part from `pragma solidity ***;` lines
-    versions = [version_str_from_line(line) for line in inputs if line.strip().startswith('pragma') and 'solidity' in line]
-
-    if not versions:
-        logging.warning('No pragma directive found in source code')
-        return None
-
-    return ' '.join(set(versions))
-
-def get_solc_candidates(source_or_source_file: str) -> List[str]:
-    merged_version = version_str_from_source(source_or_source_file)
-
-    if not merged_version:
-        return []
-
-    spec = semantic_version.NpmSpec(merged_version)
-    return [str(v) for v in spec.filter(get_all_installable_versions())]
-
-def detect_solc_version(source_or_source_file: str) -> Optional[str]:
-    '''
-    Detect solc version from a flatten source. Input can be a single file or source code string
-    '''
-    versions = get_solc_candidates(source_or_source_file)
-    return versions[-1] if versions else None
-
-
-def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
-    syms = [c['ast']['exportedSymbols'] for c in ast.values()]
-    return {k: v[0] for m in syms for k, v in m.items()}
-
-
-def symbols_to_ids_from_ast_v7(ast: Dict[Any, Any]) -> Dict[str, int]:
-    syms = [c['ast']['attributes']['exportedSymbols'] for c in ast.values()]
-    return {k: v[0] for m in syms for k, v in m.items()}
-
-
-def find_next_version_in_candidates(current_version: str, solc_candidates: List[str]) -> Tuple[str, List[str]]:
-    """Try to get the next version"""
-    ver = Version(current_version)
-    try_next_version = Version(major=ver.major, minor= ver.minor - 1, patch=0)
-    print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
-    version = None
-    # print(f'try_next_version: {try_next_version} solc_candidates: {solc_candidates}')
-    if str(try_next_version) in solc_candidates:
-        version = str(try_next_version)
-        solc_candidates = [v for v in solc_candidates if Version(v) < try_next_version]
-
-    elif solc_candidates:
-        version = str(solc_candidates[-1])
-        solc_candidates = solc_candidates[:-1]
-    if not version:
-        raise ValueError(f'No next solc version available for {current_version}')
-    return version, solc_candidates
-
+from typing import Collection, Dict, Optional, List, Any, Union
+from functools import cached_property, cache
+from .fields import Field, Function, ContractData, Modifier, Event, Literal
+from .version_cfg import v_keys
+from . import consts
+from . import ast_shared as s
 
 
 class SolidityAstError(ValueError):
     pass
 
-
-DEFAULT_OPTIMIZER = {'enabled': True, 'runs': 200}
 
 class SolidityAst():
 
@@ -244,7 +96,7 @@ class SolidityAst():
         self.base_path = os.path.abspath(base_path) if base_path else None
         self.allow_paths = solc_options.get('allow_paths')
         self.retry_num = retry_num or 0
-        self.allowed_solc_versions = get_solc_candidates(self.source) or get_all_installable_versions()
+        self.allowed_solc_versions = s.get_solc_candidates(self.source) or s.get_all_installable_versions()
         self.solc_candidates = list(self.allowed_solc_versions)
         self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
         self.exported_symbols: Dict[str, int] = {} # contract name -> id mapping, to be determined in _parse()
@@ -263,7 +115,7 @@ class SolidityAst():
 
     @cached_property
     def raw_version(self):
-        return version_str_from_source(self.source)
+        return s.version_str_from_source(self.source)
 
     def _get_version_key(self):
         if int(self.exact_version[2]) < 8:
@@ -316,7 +168,7 @@ class SolidityAst():
                 # else:
                 # if no modifiers, will return []
                 for child in node['modifiers']:
-                    if get_in(child, 'children', 0, 'attributes', 'type') == "modifier ()":
+                    if s.get_in(child, 'children', 0, 'attributes', 'type') == "modifier ()":
                         modifiers.append(child['children'][0]['attributes']['value'])
             return modifiers
 
@@ -489,7 +341,6 @@ class SolidityAst():
                             new_function.inherited_from = base_contract_name
                             contract.functions.append(new_function)
 
-        # self.save_solc_ast_json("test_literal")
         # if there are n contracts in the same file, there will be n keys in the json,
         # but we only need the first one[0], because it contains all the contracts, and the rest are the same
         # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
@@ -499,9 +350,9 @@ class SolidityAst():
         unique_file = set()
 
         if self.v8:
-            self.exported_symbols = symbols_to_ids_from_ast_v8(self.solc_json_ast)
+            self.exported_symbols = s.symbols_to_ids_from_ast_v8(self.solc_json_ast)
         else:
-            self.exported_symbols = symbols_to_ids_from_ast_v7(self.solc_json_ast)
+            self.exported_symbols = s.symbols_to_ids_from_ast_v7(self.solc_json_ast)
 
         self.id_to_symbols = {v: k for k, v in self.exported_symbols.items()}
 
@@ -577,22 +428,14 @@ class SolidityAst():
         except Exception as e:
             if self.retry_num > 0:
                 self.retry_num -= 1
-                # self.exact_version = get_increased_version(self.exact_version, install=self.try_install_solc)
-                self.exact_version, self.solc_candidates = find_next_version_in_candidates(self.exact_version, self.solc_candidates)
+                # self.exact_version = s.get_increased_version(self.exact_version, install=self.try_install_solc)
+                self.exact_version, self.solc_candidates = s.find_next_version_in_candidates(self.exact_version, self.solc_candidates)
                 self.prepare_by_version()
                 self.compile()
             else:
                 raise SolidityAstError(f"Compile failed with solc version {self.exact_version}, err msg: {e}")
         finally:
             os.chdir(current_working_dir)
-
-    def save_solc_ast_json(self, name: str):
-        with open(f'{SOLC_JSON_AST_FOLDER}/{name}_solc_ast.json', 'w') as f:
-            json.dump(self.solc_json_ast, f, indent=4)
-
-    def save_parsed_info_json(self, name: str):
-        with open(f'{PARSED_JSON}/{name}.json', 'w') as f:
-            json.dump(self.contracts_dict, f, default=lambda obj: obj.__dict__, indent=4)
 
     def all_contracts(self) -> List[ContractData]:
         # dict to list
@@ -622,7 +465,7 @@ class SolidityAst():
         base_contracts_name = self.base_contract_names
         pruned_contracts = [c for c in contracts \
                             if c.name not in base_contracts_name \
-                            and c.kind not in INTERFACE_OR_LIB_KIND \
+                            and c.kind not in s.INTERFACE_OR_LIB_KIND \
                             and not c.abstract]
         return pruned_contracts
 
@@ -735,34 +578,6 @@ class SolidityAst():
     def all_libraries_names(self) -> List[str]:
         return [lib.name for lib in self.all_libraries()]
 
-    @staticmethod
-    def __skip_deploys(opcodes, deploy_sig_idx=0):
-        if deploy_sig_idx >= len(DEPLOY_START_OPCODES):
-            raise SolidityAstError(f'Code deploy sequence not found in opcodes: {opcodes}')
-        offset = 1
-        match_idx = 0
-        deploy_start_sequence = DEPLOY_START_OPCODES[deploy_sig_idx]
-
-        while offset < len(opcodes):
-            if opcodes[offset] == deploy_start_sequence[match_idx]:
-                match_idx += 1
-                if match_idx == len(deploy_start_sequence):
-                    break
-            else:
-                match_idx = 0
-            offset += 1
-
-        if offset < len(opcodes):
-            return opcodes[offset - len(deploy_start_sequence) + 1:]
-        return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
-
-    @staticmethod
-    def __record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int]) -> set[int]:
-        if opcode == 'JUMPI':
-            seen_targets.add(int(code[idx-1].get('value')))
-            seen_targets.add(int(pc + 1))
-
-        return seen_targets
 
     @cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
@@ -786,7 +601,7 @@ class SolidityAst():
         source_list = contract.get('asm').get('sourceList') if contract.get('asm').get('sourceList') else self.get_source_list()
 
         if not deploy:
-            opcodes = SolidityAst.__skip_deploys(opcodes)
+            opcodes = s.skip_deploys(opcodes)
 
         if not (opcodes or asm_data):
             raise(SolidityAstError('Missing required params!'))
@@ -814,7 +629,7 @@ class SolidityAst():
 
             opcode = c.get('name').split()[0]
 
-            SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets)
+            s.record_jumps(opcode, code, i-1, offset, seen_targets)
 
             if opcode == 'PUSHDEPLOYADDRESS':
                 i += 2
@@ -856,7 +671,7 @@ class SolidityAst():
         yul_support_flag = False
         for contract_name in self.solc_json_ast.keys():
             absolute_path = self.source_path_by_contract(contract_name)
-            idx = get_in(self.solc_json_ast, contract_name, 'ast', 'src').split(':')[-1]
+            idx = s.get_in(self.solc_json_ast, contract_name, 'ast', 'src').split(':')[-1]
             idx2path[int(idx)] = absolute_path
             if self.solc_json_ast.get(contract_name).get('generated-sources') and \
                     self.solc_json_ast.get(contract_name).get('generated-sources-runtime'):
@@ -881,9 +696,9 @@ class SolidityAst():
     def source_path_by_contract(self, contract_name) -> Optional[str]:
         path = None
         if self.v8:
-            path = get_in(self.solc_json_ast, contract_name, 'ast', 'absolutePath')
+            path = s.get_in(self.solc_json_ast, contract_name, 'ast', 'absolutePath')
         else:
-            path = get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
+            path = s.get_in(self.solc_json_ast, contract_name, 'ast', 'attributes', 'absolutePath')
 
         base_path = self.base_path or self.root_path
         return None if (not path) or path == '<stdin>' else os.path.join(base_path, path)
@@ -903,7 +718,7 @@ class SolidityAst():
     def all_pcs(self, contract_name: str, deploy: bool) -> set[int]:
         '''Return all program counters by contract name'''
         asm = self.__parse_asm_data(contract_name, deploy=deploy)
-        return set((get_in(asm, 'pc2idx') or {}).keys())
+        return set((s.get_in(asm, 'pc2idx') or {}).keys())
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:
@@ -930,33 +745,6 @@ class SolidityAst():
             source_code = self.source
         return source_code
 
-    @staticmethod
-    @cache
-    def parse_src_mapping(srcmap: str):
-        def _reduce_fn(accumulator, current_value):
-            last, *tlist = accumulator
-            return [
-                {
-                    's': int(current_value['s'] or last['s']),
-                    'l': int(current_value['l'] or last['l']),
-                    'f': int(current_value['f'] or last['f']),
-                },
-                last,
-                *tlist
-            ]
-
-        parsed = srcmap.split(";")
-        parsed = [l.split(':') for l in parsed]
-        t = []
-        for l in parsed:
-            if len(l) >= 3:
-                t.append(l[:3])
-            else:
-                t.append(l + [None] * (3 - len(l)))
-        parsed = [{'s': s if s != "" else None, 'l': l, 'f': f} for s, l, f in t]
-        parsed = reduce(_reduce_fn, parsed, [{}])
-        parsed = list(reversed(parsed[:-1]))
-        return parsed
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Dict[str, Any]:
         """
@@ -971,7 +759,7 @@ class SolidityAst():
             source_idx = part['source']
         else:
             src_mapping = self.solc_json_ast[contract_name]['srcmap-runtime']
-            parsed_mapping = self.parse_src_mapping(src_mapping)
+            parsed_mapping = s.parse_src_mapping(src_mapping)
             mapping_idx = list(pc2idx.values()).index(pc_idx)
             source_idx = parsed_mapping[mapping_idx].get('f')
 
@@ -1000,10 +788,10 @@ class SolidityAst():
 
     def get_any(self, *keys) -> Any:
         '''Get any value by keys from the original compiled ast data'''
-        return get_in(self.original_compilation_output, *keys)
+        return s.get_in(self.original_compilation_output, *keys)
 
     def get_deploy_bin_by_contract_name(self, contract_name: str) -> Optional[str]:
-        return get_in(self.solc_json_ast, contract_name, 'bin')
+        return s.get_in(self.solc_json_ast, contract_name, 'bin')
 
     def qualified_name_from_hash(self, hsh: str)->str:
         '''Get fully qualified contract name from 34 character hash'''
@@ -1013,54 +801,6 @@ class SolidityAst():
         '''Get deployment binary by hash of fully qualified contract / library name'''
         return self.get_any(self.qualified_name_from_hash(hsh), 'bin')
 
-    @staticmethod
-    def _process_literal_node(literals_nodes, only_value):
-        def _process_other_literal_node(literal_node, literals, only_value):
-            try:
-                if only_value:
-                    literals['other'].add(literal_node.str_value)
-                else:
-                    literals['other'].add(literal_node)
-            except AttributeError:
-                pass
-
-        literals = dict(number=set(), string=set(), address=set(), other=set())
-        for literal in literals_nodes:
-            try:
-                if literal.sub_type is None and literal.token_type == 'number':
-                    if only_value and literal.str_value.isdecimal():
-                        literals['number'].add(int(literal.str_value))
-                    else:
-                        literals['number'].add(literal)
-                elif literal.sub_type.startswith("address"):
-                    if only_value:
-                        literals['address'].add(literal.str_value)
-                    else:
-                        literals['address'].add(literal)
-                elif literal.sub_type.startswith("int"):
-                    if only_value:
-                        if literal.str_value.startswith('0x'):
-                            literals['number'].add(int(literal.str_value, 16))
-                        elif literal.sub_type.split()[1].isdecimal():
-                            literals['number'].add(int(literal.sub_type.split()[1]))
-                        else:
-                            literals['number'].add(int(literal.str_value))
-                    else:
-                        literals['number'].add(literal)
-                # check if string in token_type, ignore case
-                elif literal.sub_type.startswith("literal_string"):
-                    if only_value:
-                        literals['string'].add(literal.str_value)
-                    else:
-                        literals['string'].add(literal)
-                elif literal.sub_type.startswith("bool"):
-                    continue
-                else:
-                    _process_other_literal_node(literal, literals, only_value)
-            except Exception as e:
-                _process_other_literal_node(literal, literals, only_value)
-
-        return literals
 
     def _traverse_nodes(self, node, literals_nodes):
         if not isinstance(node, dict):
@@ -1111,35 +851,6 @@ class SolidityAst():
         # traverse the dictionary and get all the literals recursively
         self._traverse_nodes(contract_node, literals_nodes)
 
-        literals = self._process_literal_node(literals_nodes, only_value)
+        literals = s.process_literal_node(literals_nodes, only_value)
 
         return literals
-
-
-if __name__ == '__main__':
-    import argparse
-    import glob
-    import traceback
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input', type=str, help="Input file", required=False)
-    parser.add_argument('-v', '--verbose', help="Verbose", action='store_true', default=False)
-    args = parser.parse_args()
-
-    failed = []
-    for c in [args.input] if args.input else glob.glob('contracts/*.sol', recursive=True):
-        try:
-            print(f'{c} {os.path.exists(c)} {type(c)} {len(c)}')
-            ast = SolidityAst(c)
-            print(f'{c}: {ast.all_contract_names}')
-        except:
-            print(f'Testing {c} error')
-            failed.append(c)
-            if args.verbose:
-                traceback.print_exc()
-
-    if not failed:
-        print('All contracts parsed success!')
-    else:
-        print(f'{len(failed)} contracts failed:')
-        print(failed)
