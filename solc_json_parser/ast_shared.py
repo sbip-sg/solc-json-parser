@@ -260,6 +260,27 @@ def record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, see
 
     return seen_targets
 
+def solc_bin(ver: str):
+    '''
+    Get solc bin full path by version. By default it checks the solcx installion path.
+    You can also override this function to use solc from https://github.com/ethereum/solc-bin/tree/gh-pages/linux-amd64
+    '''
+    return os.path.expanduser(f'~/.solcx/solc-v{ver}')
+
+version_pattern = r'v(\d+\.\d+\.\d+)'
+
+def simplify_version(s):
+    '''
+    Convert a version with sha to a simple version
+    Example: v0.8.13+commit.abaa5c0e -> 0.8.13
+    '''
+    match = re.search(version_pattern, s or '')
+    if match:
+        extracted_version = match.group(1)
+        return extracted_version
+    else:
+        return None
+
 
 class SolidityAstError(ValueError):
     pass

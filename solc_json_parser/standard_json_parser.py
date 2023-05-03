@@ -1,28 +1,13 @@
 import subprocess
 import json
-import re
 import os
-from typing import Tuple, Callable, List
-
-def solc_bin(ver: str):
-    '''
-    Get solc bin full path by version. By default it checks the solcx installion path.
-    You can also override this function to use solc from https://github.com/ethereum/solc-bin/tree/gh-pages/linux-amd64
-    '''
-    return os.path.expanduser(f'~/.solcx/solc-v{ver}')
-
-version_pattern = r'v(\d+\.\d+\.\d+)'
-def simplify_version(s):
-    '''
-    Convert a version with sha to a simple version
-    Example: v0.8.13+commit.abaa5c0e -> 0.8.13
-    '''
-    match = re.search(version_pattern, s or '')
-    if match:
-        extracted_version = match.group(1)
-        return extracted_version
-    else:
-        return None
+from typing import Tuple, Callable, List, Union, Optional, Dict
+from functools import cached_property
+from .version_cfg import v_keys
+from . import ast_shared as s
+from .ast_shared import SolidityAstError, solc_bin
+from .base_parser import BaseParser
+from .fields import Field, Function, ContractData, Modifier, Event, Literal
 
 def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin):
     '''
@@ -102,6 +87,19 @@ def source_content_by_file_key(input_json: dict, filename: str):
     '''
     return input_json['sources'][filename]['content']
 
+def filename_by_fid(output_json: dict, fid: int) -> str:
+    filename = ''
+    for k, source in output_json['sources'].items():
+        if fid == source['id']:
+            filename = k
+            break
+
+    return filename
+
+def source_content_by_fid(input_json: dict, output_json: dict, fid: int):
+    filename = filename_by_fid(output_json, fid)
+    return source_content_by_file_key(input_json, filename)
+
 def source_by_pc(input_json: dict, output_json: dict, pc: int, evm: dict, deploy=False):
     code, pc2idx = build_pc2idx(evm, deploy)
     code_len = len(code)
@@ -164,17 +162,138 @@ def has_compilation_error(output_json: dict) -> bool:
     return 'Error' in errors_t
 
 
+class StandardJsonParser(BaseParser):
+    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
+        self.solc_version: str = version
+        self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+        self.solc_json_ast: Dict[int, dict] = {}
+        self.is_standard_json = True
+        self.pre_configure_compatible_fields()
 
-class StandardJsonParser():
-    def __init__(self, input_json: dict, solc_version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
-        self.input_json = input_json
-        self.output_json = compile_standard(solc_version, input_json, solc_bin_resolver)
+
+        self.output_json = compile_standard(version, self.input_json, solc_bin_resolver)
         if has_compilation_error(self.output_json):
-            raise Exception('Compile failed:' + self.output_json.get('errors'))
+            raise SolidityAstError('Compile failed:' + self.output_json.get('errors'))
 
-    def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> dict:
+        self.post_configure_compatible_fields()
+
+
+    def prepare_by_version(self):
+        super().prepare_by_version()
+        # NOTE the whole v_keys seems unneccessary when using standard json input, all format follows v8 version of combined json outputs
+        self.keys = v_keys['v8']
+
+
+    def pre_configure_compatible_fields(self):
+        """
+        Configure the fields to maintain backward compatibility with the CombinedJsonParser, called before compilation
+        """
+        self.raw_version = self.solc_version
+        self.exact_version = self.solc_version
+        self.prepare_by_version()
+
+    def __build_ast(self):
+        ast_dict = {}
+        for filename, source in self.output_json.get('sources').items():
+            # key = source['id']
+            ast_dict.update({filename: source})
+        return ast_dict
+
+
+    def get_line_number_range_and_source(self, slf):
+        start, length, fid = slf
+        content = source_content_by_fid(self.input_json, self.output_json, fid)
+        source_code_bytes = content.encode()
+        start_line = source_code_bytes[:start].decode().count('\n') + 1
+        end_line = start_line + source_code_bytes[start:start + length].decode().count('\n')
+        return (start_line, end_line), source_code_bytes.decode()
+
+
+    def _get_contract_meta_data(self, node: Dict) -> tuple:
+        # line number range is the same for all versions
+        line_number_range_raw = list(map(int, node.get('src').split(':')))
+        line_number_range, _ = self.get_line_number_range_and_source(line_number_range_raw)
+        contract_id = node.get('id')
+
+        assert node.get('name') is not None
+        assert node.get('abstract') is not None
+        # assert node.get('baseContracts') is not None
+
+        contract_kind = node.get('contractKind')
+
+        is_abstract = node.get('abstract')
+
+        if node.get('baseContracts') is not None:
+            base_contracts = self._get_base_contracts(node.get('baseContracts'))
+        else:
+            base_contracts = node.get('contractDependencies')
+        contract_name = node.get('name')
+
+        return contract_id, contract_kind, is_abstract, contract_name, base_contracts, line_number_range
+
+
+    @cached_property
+    def exported_symbols(self) -> Dict[str, int]:
+        return s.symbols_to_ids_from_ast_v8(self.solc_json_ast)
+
+
+    def post_configure_compatible_fields(self):
+        """
+        Configure the fields to maintain backward compatibility with the CombinedJsonParser, called after compilation
+        """
+        self.solc_json_ast = self.__build_ast()
+        self.contracts_dict = self._parse()
+
+
+    def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             result = source_by_pc(self.input_json, self.output_json, pc, evm, deploy)
             if result:
                 return result
+        return None
+
+
+    def __get_binary(self, contract_name: str, filename: Optional[str], deploy=False) -> List[Tuple[str, str, str]]:
+        """
+        Returns a list of tuples, each tuple is: `(filename, contract_name, binary)`
+        """
+        bins = []
+        evms = evms_by_contract_name(self.output_json, contract_name)
+        bytecode_key = 'bytecode' if deploy else 'deployedBytecode'
+        for _filename, evm in evms:
+            bin = evm.get(bytecode_key, {}).get('object')
+            if bin and ((not filename) or _filename == filename):
+                bins.append((filename, contract_name, bin))
+        return bins
+
+    def get_runtime_binary(self, contract_name: str) -> List[Tuple[str, str, str]]:
+        """
+        Returns a list of tuples, each tuple is: `(filename, contract_name, binary)`
+        """
+        return self.__get_binary(contract_name, None, deploy=False)
+
+    def get_deployment_binary(self, contract_name: str) -> List[Tuple[str, str, str]]:
+        """
+        Returns a list of tuples, each tuple is: `(filename, contract_name, binary)`
+        """
+        return self.__get_binary(contract_name, None, deploy=True)
+
+    def qualified_name_from_hash(self, hsh: str)->Optional[Tuple[str, str]]:
+        '''Get fully qualified contract name from 34 character hash'''
+        for filename, m_contract in self.output_json.get('contracts').items():
+            for contract_name, contract in m_contract.items():
+                full_name = f'{filename}:{contract_name}'
+                if hsh == s.keccak256(full_name)[:34]:
+                    return (filename, contract_name)
+
+        return None
+
+    # TODO test
+    def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
+        '''Get deployment binary by hash of fully qualified contract / library name'''
+        r = self.qualified_name_from_hash(hsh)
+        if not r:
+            return None
+        filename, contract_name = r
+        return self.__get_binary(contract_name, filename, deploy=True)[0][2]

@@ -5,35 +5,11 @@ from solc_json_parser.standard_json_parser import StandardJsonParser
 
 contracts_root = './contracts/standard_json/'
 
-# Version pattern used in the etherscan api response
-version_pattern = r'v(\d+\.\d+\.\d+)'
-
-def simplify_version(s):
-    match = re.search(version_pattern, s or '')
-    if match:
-        extracted_version = match.group(1)
-        return extracted_version
-    else:
-        return None
-
-def parse_etherscan_json(input: str, as_path: bool = False):
-    '''
-    Parse contract json file from etherscan API
-    '''
-    if as_path:
-        with open(input, 'r') as f:
-            input = f.read()
-    try:
-        return json.loads(input)
-    except Exception:
-        return None
-
-
 class TestStandardJsonParser(unittest.TestCase):
-    def test_standard_json_multi_files(self):
+    def setUp(self):
         files = ['a.sol', 'b.sol', 'main.sol']
         ver = '0.7.0'
-        main_contract = 'Main'
+        self.main_contract = 'Main'
         sources = {}
         for file in files:
             with open(contracts_root + file, 'r') as f:
@@ -57,7 +33,9 @@ class TestStandardJsonParser(unittest.TestCase):
         }
 
         parser = StandardJsonParser(input_json, ver)
+        self.parser = parser
 
+    def test_standard_json_source_mapping(self):
         expected_data = [
             {'pc': 427, 'linenums': [10, 10], 'begin': 166, 'end': 176, 'source_path': 'b.sol'},
             {'pc': 800, 'linenums': [9, 9], 'begin': 224, 'end': 239, 'source_path': 'a.sol'},
@@ -68,7 +46,23 @@ class TestStandardJsonParser(unittest.TestCase):
         for expected in expected_data:
             pc = expected['pc']
             keys = expected.keys()
-            actual = parser.source_by_pc(main_contract, pc, False)
+            actual = self.parser.source_by_pc(self.main_contract, pc, False)
             e = { k: actual[k] for k in keys }
 
             self.assertEqual(e, expected)
+
+
+    def test_all_contract_name(self):
+        expected_contract_names = {'A', 'B', 'Main'}
+        all_contract_names = set(self.parser.all_contract_names)
+        self.assertEqual(expected_contract_names, all_contract_names, 'Contracts should be identified correctly')
+
+    def test_base_contract_names(self):
+        expected_base_contract_names = {'A', 'B'}
+        base_contract_names = set(self.parser.base_contract_names)
+        self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
+
+    def test_pruned_contract_names(self):
+        expected_pruned_contract_names = {'Main'}
+        pruned_contract_names = set(self.parser.pruned_contract_names)
+        self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')

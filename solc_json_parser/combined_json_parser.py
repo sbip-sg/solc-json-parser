@@ -15,84 +15,57 @@ from .base_parser import BaseParser, SolidityAstError
 
 
 class SolidityAst(BaseParser):
+    def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None, try_install_solc=False):
+        self.file_path = None
+        self.root_path = None
+        self.is_standard_json = False
+
+        if contract_source_path is not None:
+            if '\n' in contract_source_path:
+                self.source = contract_source_path
+                self.compile_type = 'source'
+            else:
+                self.compile_type = 'file'
+                self.file_path = os.path.abspath(contract_source_path)
+                self.root_path = os.path.dirname(contract_source_path)
+                with open(contract_source_path, 'r') as f:
+                    self.source = f.read()
+
+        self.original_compilation_output :Optional[Dict] = None
+        self.try_install_solc = try_install_solc
+        self.solc_outputs = solc_outputs
+        self.solc_options = solc_options
+        self.import_remappings = solc_options.get('import_remappings')
+        base_path = solc_options.get('base_path')
+        self.base_path = os.path.abspath(base_path) if base_path else None
+        self.allow_paths = solc_options.get('allow_paths')
+        self.retry_num = retry_num or 0
+        self.allowed_solc_versions = self.source and s.get_solc_candidates(self.source) or s.get_all_installable_versions()
+        self.solc_candidates = list(self.allowed_solc_versions)
+        self.exact_version: str   = version or self.solc_candidates[-1] or consts.DEFAULT_SOLC_VERSION
+
+        self.version_key: str     = self._get_version_key()
+        self.keys: addict.Dict    = v_keys[self.version_key]
+        self.prepare_by_version()
+
+        if not lazy:
+            self.build()
 
     def build(self):
         self.compile()
         self.contracts_dict: Dict = self._parse()
 
     @cached_property
+    def exported_symbols(self) -> Dict[str, int]:
+        if self.v8:
+            return s.symbols_to_ids_from_ast_v8(self.solc_json_ast)
+        else:
+            return s.symbols_to_ids_from_ast_v7(self.solc_json_ast)
+
+
+    @cached_property
     def raw_version(self):
         return s.version_str_from_source(self.source)
-
-    def _parse(self) -> Dict:
-        def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
-            for contract_id, contract in data_dict.items():
-                if len(contract.base_contracts) != 0:
-                    for base_contract_id in contract.base_contracts:
-                        base_contract = data_dict.get(base_contract_id)
-                        base_contract_name = base_contract.name
-                        for field in base_contract.fields:
-                            new_field = copy.deepcopy(field)
-                            new_field.inherited_from = base_contract_name
-                            contract.fields.append(new_field)
-                        for function in base_contract.functions:
-                            new_function = copy.deepcopy(function)
-                            new_function.inherited_from = base_contract_name
-                            contract.functions.append(new_function)
-
-        # if there are n contracts in the same file, there will be n keys in the json,
-        # but we only need the first one[0], because it contains all the contracts, and the rest are the same
-        # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
-        data_dict = {}
-        # use version key to get the correct version cfg
-        keys = self.keys
-        unique_file = set()
-
-        if self.v8:
-            self.exported_symbols = s.symbols_to_ids_from_ast_v8(self.solc_json_ast)
-        else:
-            self.exported_symbols = s.symbols_to_ids_from_ast_v7(self.solc_json_ast)
-
-        self.id_to_symbols = {v: k for k, v in self.exported_symbols.items()}
-
-        for ast_key in self.solc_json_ast.keys():
-            if ast_key.split(':')[0] in unique_file:
-                continue
-
-            unique_file.add(ast_key.split(':')[0])
-            ast = self.solc_json_ast.get(ast_key).get('ast')
-            if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
-                raise SolidityAstError("Invalid AST")
-
-            for i, node in enumerate(ast[keys.children]):
-                if node[keys.name] == "PragmaDirective":
-                    continue
-                elif node[keys.name] == "ContractDefinition":
-                    contract = self._process_contract(node)
-                    data_dict[contract.contract_id] = contract
-                    assert contract.contract_id > 0, 'Missing contract_id in contract'
-        _add_inherited_function_fields(data_dict)
-        return data_dict
-
-
-    def prepare_by_version(self):
-        """Prepare compilation outputs, etc by the current `exact_version`"""
-        ver = Version(self.exact_version)
-        outputs = ['abi', 'bin', 'bin-runtime', 'srcmap', 'srcmap-runtime', 'asm', 'opcodes', 'ast']
-
-        self.version_key: str     = self._get_version_key()
-        self.keys: addict.Dict    = v_keys[self.version_key]
-        # clear cache
-        try: del self.v8
-        except AttributeError: pass
-
-        if ver >= Version("0.6.5"):
-            outputs.append('storage-layout')
-
-        if self.v8:
-            outputs += ['generated-sources-runtime', 'generated-sources', ]
-
-        self.solc_compile_outputs = outputs
 
 
     def compile(self):
@@ -129,134 +102,6 @@ class SolidityAst(BaseParser):
         finally:
             os.chdir(current_working_dir)
 
-    def all_contracts(self) -> List[ContractData]:
-        # dict to list
-        return list(self.contracts_dict.values())
-
-    @cached_property
-    def all_contract_names(self) -> List[str]:
-        return [self.id_to_symbols[d] for d in self.contracts_dict.keys()]
-
-    def all_abstract_contracts(self) -> List[ContractData]:
-        return [contract for contract in self.all_contracts() if contract.abstract]
-
-    @cached_property
-    def all_abstract_contract_names(self) -> List[str]:
-        return [contract.name for contract in self.all_abstract_contracts()]
-
-    @cached_property
-    def base_contract_names(self) -> List[str]:
-        contracts = self.all_contracts()
-        base_contract_ids = set([bc for c in contracts for bc in c.base_contracts])
-        names = [self.id_to_symbols[d] for d in base_contract_ids]
-        assert len(set(names)) == len(base_contract_ids), f'Possibly different contracts with same name: {self.id_to_symbols} {base_contract_ids}, {names}'
-        return names
-
-
-    def contract_by_name(self, contract_name: str) -> ContractData:
-        return self.contracts_dict[self.exported_symbols[contract_name]]
-
-    def fields_in_contract(self, contract: ContractData,
-                           name_only: bool = False,
-                           field_visibility: Optional[frozenset] = None,
-                           parent_field_visibility: Optional[frozenset] = BaseParser.FIELD_VISIBILITY_NON_PRIVATE,
-                           with_base_fields=False) -> List[Field]:
-        fields = contract.fields
-        if (field_visibility is not None) and not (field_visibility == BaseParser.FIELD_VISIBILITY_ALL):
-            fields = [n for n in fields if n.visibility in field_visibility]
-
-        # contract.fields has already included the base fields
-        if not with_base_fields:
-            fields = [n for n in fields if n.inherited_from == ''] # remove all base fields
-        else:
-            temp = []
-            for field in fields:
-                # fields contains all, so if inherited_from is not '', it is inherited and
-                # we need to check the visibility(e.g. sometimes private can not be included here)
-                if field.inherited_from != '':
-                    if field.visibility in parent_field_visibility:
-                        temp.append(field)
-                else:
-                    temp.append(field)
-            # base_contract_names = contract.base_contracts
-            # base_fields = [f for c in base_contract_names
-            #                for f in self.fields_in_contract_by_name(c, field_visibility=parent_field_visibility)]
-            fields = temp
-
-        return [f.name if name_only else f for f in fields]
-
-    def fields_in_contract_by_name(self, contract_name: str,
-                                   name_only: bool = False,
-                                   field_visibility: Optional[frozenset] = None,
-                                   parent_field_visibility: Optional[frozenset] = BaseParser.FIELD_VISIBILITY_NON_PRIVATE,
-                                   with_base_fields=False) -> List[Field]:
-        contract = self.contract_by_name(contract_name)
-        return self.fields_in_contract(contract, name_only, field_visibility, parent_field_visibility, with_base_fields)
-
-    def functions_in_contract(self, contract: ContractData,
-                              name_only: bool = False,
-                              function_visibility: Optional[frozenset] = None,
-                              check_base_contract=True) -> List[Union[Function, str]]:
-        # filter and return all functions for a given contract object of type `ContractData`
-
-        # by default, base contract's functions are included
-        # different from fields, we don't check parent function visibility
-        functions = contract.functions
-        if not check_base_contract:
-            functions = [n for n in functions if n.inherited_from == '']
-
-        if (function_visibility is not None) and (function_visibility != self.FUNC_VISIBILITY_ALL):
-            functions = [n for n in functions if n.visibility in function_visibility]
-
-        if name_only:
-            return [n.name for n in functions]
-        return functions
-
-    def functions_in_contract_by_name(self, contract_name: str,
-                                      name_only: bool = False,
-                                      function_visibility: Optional[frozenset] = None,
-                                      check_base_contract=True) -> List[Any]:
-        # return all functions for a given "contract name"(str)
-        contract = self.contract_by_name(contract_name)
-        return self.functions_in_contract(contract, name_only, function_visibility, check_base_contract)
-
-    def abstract_function_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
-        # return all abstract functions for a given "contract name"
-        fns = [fn for fn in self.functions_in_contract_by_name(contract_name) if fn.abstract]
-        if name_only:
-            return [fn.name for fn in fns]
-        return fns
-
-    def function_by_name(self, contract_name: str, function_name: str) -> Function:
-        """return a function for a given "contract name"(str) and "function name"(str)"""
-        contract = self.contract_by_name(contract_name)
-        funcs    = self.functions_in_contract(contract)
-        return next(fn for fn in funcs if fn.name == function_name)
-
-    def events_in_contract(self, contract: ContractData, name_only: bool = False) -> List[Union[str, Event]]:
-        """return all events for a given contract object of type `ContractData`"""
-        events = contract.events
-        if name_only:
-            return [n.name for n in events]
-        return events
-
-    def events_in_contract_by_name(self, contract_name: str, name_only: bool = False) -> List[Any]:
-        """return all events for a given "contract name"(str)"""
-        contract = self.contract_by_name(contract_name)
-        return self.events_in_contract(contract, name_only)
-
-    def event_by_name(self, contract_name: str, event_name: str) -> Event:
-        """return an event for a given "contract name"(str) and "event name"(str)"""
-        contract = self.contract_by_name(contract_name)
-        events    = self.events_in_contract(contract)
-        return next(ev for ev in events if ev.name == event_name)
-
-    def all_libraries(self) -> List[ContractData]:
-        return [contract for contract in self.all_contracts() if contract.kind == "library"]
-
-    @cached_property
-    def all_libraries_names(self) -> List[str]:
-        return [lib.name for lib in self.all_libraries()]
 
 
     @cache
@@ -475,7 +320,7 @@ class SolidityAst(BaseParser):
 
     def qualified_name_from_hash(self, hsh: str)->str:
         '''Get fully qualified contract name from 34 character hash'''
-        return next(full_name for full_name in self.original_compilation_output.keys() if keccak256(full_name)[:34] == hsh)
+        return next(full_name for full_name in self.original_compilation_output.keys() if s.keccak256(full_name)[:34] == hsh)
 
     def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
         '''Get deployment binary by hash of fully qualified contract / library name'''
