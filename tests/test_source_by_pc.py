@@ -1,5 +1,5 @@
 import unittest
-from solc_json_parser.parser import SolidityAst
+from solc_json_parser.combined_json_parser import SolidityAst
 from solc_json_parser.ast_shared import get_in
 from typing import Dict, Any, List
 

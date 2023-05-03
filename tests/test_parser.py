@@ -1,5 +1,5 @@
 import unittest
-from solc_json_parser.parser import SolidityAst, SolidityAstError
+from solc_json_parser.combined_json_parser import SolidityAst, SolidityAstError
 contracts_root = './contracts'
 
 
