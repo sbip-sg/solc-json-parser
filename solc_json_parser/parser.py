@@ -12,6 +12,8 @@ from typing import Collection, Dict, Optional, List, Any, Tuple, Union
 from functools import cached_property, cache, reduce
 from Crypto.Hash import keccak
 
+from solc_json_parser.ast_shared import deprecated_class
+
 try:
     from fields import Field, Function, ContractData, Modifier, Event, Literal
     from version_cfg import v_keys
@@ -164,6 +166,7 @@ class SolidityAstError(ValueError):
 
 DEFAULT_OPTIMIZER = {'enabled': True, 'runs': 200}
 
+@deprecated_class
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))

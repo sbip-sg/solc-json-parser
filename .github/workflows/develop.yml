@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3                
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-python@v4
       with:
@@ -24,7 +24,5 @@ jobs:
     - name: Test
       run: |
         pip install .
+        python prepare_solc_binaries.py
         python -m unittest
-
-        
-

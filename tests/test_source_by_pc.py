@@ -1,5 +1,6 @@
 import unittest
-from solc_json_parser.parser import SolidityAst, get_in
+from solc_json_parser.combined_json_parser import CombinedJsonParser
+from solc_json_parser.ast_shared import get_in
 from typing import Dict, Any, List
 
 
@@ -40,7 +41,7 @@ class TestSourceByPc(unittest.TestCase):
                       (218, 15)],
                      {'optimize': True, 'optimize_runs': 200})]
         for t in test_cases:
-            ast = SolidityAst(t.source, solc_options=t.solc_options)
+            ast = CombinedJsonParser(t.source, solc_options=t.solc_options)
             for (pc, linenum) in t.expected_pc_start_lines:
                 frag = ast.source_by_pc(t.contract, pc, t.use_deploy_code)
                 ln = get_in(frag, 'linenums', 0)
@@ -58,7 +59,7 @@ class TestSourceByPc(unittest.TestCase):
                      [(132, 17),]),
         ]
         for t in test_cases:
-            ast = SolidityAst(t.source)
+            ast = CombinedJsonParser(t.source)
             for (pc, linenum) in t.expected_pc_start_lines:
                 frag = ast.source_by_pc(t.contract, pc, t.use_deploy_code)
                 ln = get_in(frag, 'linenums', 0)

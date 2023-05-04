@@ -2,7 +2,6 @@ import unittest
 import json
 from solc_json_parser.abi import abi_from_binary
 
-
 class TestAbiFromBinary(unittest.TestCase):
     def test_abi_from_binary(self):
         with open('./tests/test_contracts/rubic.bin', 'r') as f:
