@@ -159,7 +159,10 @@ def evms_by_contract_name(output_json: dict, contract_name: str) -> List[Tuple[s
 
 def has_compilation_error(output_json: dict) -> bool:
     errors_t = {t.get('type') for t in output_json.get('errors', [])}
-    return 'Error' in errors_t
+    for e in errors_t:
+        if 'Error' in e:
+            return True
+    return False
 
 
 class StandardJsonParser(BaseParser):
@@ -173,7 +176,7 @@ class StandardJsonParser(BaseParser):
 
         self.output_json = compile_standard(version, self.input_json, solc_bin_resolver)
         if has_compilation_error(self.output_json):
-            raise SolidityAstError('Compile failed:' + self.output_json.get('errors'))
+            raise SolidityAstError(f"Compile failed: {self.output_json.get('errors')}" )
 
         self.post_configure_compatible_fields()
 

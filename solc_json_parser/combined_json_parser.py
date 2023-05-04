@@ -13,8 +13,7 @@ from . import ast_shared as s
 from .base_parser import BaseParser, SolidityAstError
 
 
-
-class SolidityAst(BaseParser):
+class CombinedJsonParser(BaseParser):
     def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None, try_install_solc=False):
         self.file_path = None
         self.root_path = None
