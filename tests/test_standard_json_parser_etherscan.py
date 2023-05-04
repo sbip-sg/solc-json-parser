@@ -69,37 +69,39 @@ class TestStandardJsonParser(unittest.TestCase):
         expected = ['OwnershipTransferred']
         self.assertListEqual(events, expected)
 
+    def test_literals(self):
+        literals = self.parser.get_literals('A', only_value=True)
+        expected_numbers = {1, 2, 256, 100, 10 * 10**18}
+        self.assertEqual(literals['number'], expected_numbers)
 
 
-
-    # def test_standard_json_source_mapping(self):
-    #     expected_data = [
-    #         {'pc': 427, 'linenums': [10, 10], 'begin': 166, 'end': 176, 'source_path': 'b.sol'},
-    #         {'pc': 800, 'linenums': [9, 9], 'begin': 224, 'end': 239, 'source_path': 'a.sol'},
-    #         {'pc': 850, 'linenums': [11, 11], 'begin': 289, 'end': 302, 'source_path': 'a.sol'},
-    #         {'pc': 869, 'linenums': [11, 11], 'begin': 210, 'end': 225, 'source_path': 'main.sol'},
-    #     ]
-
-    #     for expected in expected_data:
-    #         pc = expected['pc']
-    #         keys = expected.keys()
-    #         actual = self.parser.source_by_pc(self.main_contract, pc, False)
-    #         e = { k: actual[k] for k in keys }
-
-    #         self.assertEqual(e, expected)
+        literals = self.parser.get_literals('B', only_value=True)
+        expected_numbers = {10}
+        expected_strings = {"myFunction(uint)"}
+        self.assertEqual(literals['string'], expected_strings)
 
 
-    # def test_all_contract_name(self):
-    #     expected_contract_names = {'A', 'B', 'Main'}
-    #     all_contract_names = set(self.parser.all_contract_names)
-    #     self.assertEqual(expected_contract_names, all_contract_names, 'Contracts should be identified correctly')
+    def test_literals(self):
+        literals = self.parser.get_literals( 'DirectLoanFixedOfferRedeploy',  only_value=True)
+        expected_strings = {'DIRECT_LOAN_FIXED_REDEPLOY'}
 
-    # def test_base_contract_names(self):
-    #     expected_base_contract_names = {'A', 'B'}
-    #     base_contract_names = set(self.parser.base_contract_names)
-    #     self.assertEqual(expected_base_contract_names, base_contract_names, 'Base contracts should be identified correctly')
+        self.assertEqual(literals['string'], expected_strings)
 
-    # def test_pruned_contract_names(self):
-    #     expected_pruned_contract_names = {'Main'}
-    #     pruned_contract_names = set(self.parser.pruned_contract_names)
-    #     self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
+        literals = self.parser.get_literals('ContractKeys',  only_value=True)
+        expected_numbers = {32}
+        expected_strings = {'AIRDROP_FACTORY',
+                            'AIRDROP_FLASH_LOAN',
+                            'AIRDROP_RECEIVER',
+                            'AirdropWrapper',
+                            'LOAN_REGISTRY',
+                            'NFTFI_BUNDLER',
+                            'NFT_TYPE_REGISTRY',
+                            'PERMITTED_AIRDROPS',
+                            'PERMITTED_BUNDLE_ERC20S',
+                            'PERMITTED_ERC20S',
+                            'PERMITTED_NFTS',
+                            'PERMITTED_PARTNERS',
+                            'PERMITTED_SNFT_RECEIVER',
+                            'invalid key'}
+        self.assertEqual(literals['number'], expected_numbers)
+        self.assertEqual(literals['string'], expected_strings)

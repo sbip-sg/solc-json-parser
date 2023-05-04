@@ -9,7 +9,7 @@ class TestStandardJsonParser(unittest.TestCase):
     def setUp(self):
         files = ['a.sol', 'b.sol', 'main.sol']
         ver = '0.7.0'
-        self.main_contract = 'Main'
+        main_contract = 'Main'
         sources = {}
         for file in files:
             with open(contracts_root + file, 'r') as f:
@@ -33,6 +33,7 @@ class TestStandardJsonParser(unittest.TestCase):
         }
 
         parser = StandardJsonParser(input_json, ver)
+        self.main_contract = main_contract
         self.parser = parser
 
     def test_standard_json_source_mapping(self):
@@ -66,3 +67,15 @@ class TestStandardJsonParser(unittest.TestCase):
         expected_pruned_contract_names = {'Main'}
         pruned_contract_names = set(self.parser.pruned_contract_names)
         self.assertEqual(expected_pruned_contract_names, pruned_contract_names, 'Pruned contracts should be identified correctly')
+
+
+    def test_literals(self):
+        literals = self.parser.get_literals('A', only_value=True)
+        expected_numbers = {1, 2, 256, 100, 10 * 10**18}
+        self.assertEqual(literals['number'], expected_numbers)
+
+
+        literals = self.parser.get_literals('B', only_value=True)
+        expected_numbers = {10}
+        expected_strings = {"myFunction(uint)"}
+        self.assertEqual(literals['string'], expected_strings)

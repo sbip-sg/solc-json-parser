@@ -4,22 +4,14 @@ from semantic_version import Version
 import semantic_version
 import logging
 import addict
+import warnings
 import solcx
 import json
 import os
 import re
-from typing import Collection, Dict, Optional, List, Any, Tuple, Union
-from functools import cached_property, cache, reduce
+from typing import Dict, Optional, List, Any, Tuple, Union
+from functools import reduce, wraps
 from Crypto.Hash import keccak
-
-try:
-    from fields import Field, Function, ContractData, Modifier, Event, Literal
-    from version_cfg import v_keys
-    import consts
-except:
-    from solc_json_parser.fields import Field, Function, ContractData, Modifier, Event, Literal
-    from solc_json_parser.version_cfg import v_keys
-    import solc_json_parser.consts
 
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
@@ -284,3 +276,17 @@ def simplify_version(s):
 
 class SolidityAstError(ValueError):
     pass
+
+
+def deprecated_class(cls):
+    @wraps(cls, updated=())
+    class DeprecatedClass(cls):
+        def __init__(self, *args, **kwargs):
+            warnings.warn(
+                f"The {cls.__name__} class is deprecated and will be removed in a future version.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            super().__init__(*args, **kwargs)
+
+    return DeprecatedClass

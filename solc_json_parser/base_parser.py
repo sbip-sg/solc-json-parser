@@ -1,7 +1,7 @@
 from semantic_version import Version
 from typing import Dict, Optional, List, Union, Any
 from functools import cached_property
-from .fields import Field, Function, ContractData, Modifier, Event
+from .fields import Field, Function, ContractData, Modifier, Event, Literal
 from .version_cfg import v_keys
 from . import ast_shared as s
 from .ast_shared import SolidityAstError
@@ -474,3 +474,32 @@ class BaseParser():
     @cached_property
     def all_libraries_names(self) -> List[str]:
         return [lib.name for lib in self.all_libraries()]
+
+
+    def _traverse_nodes(self, node, literals_nodes):
+        if not isinstance(node, dict):
+            return
+
+        if node.get(self.keys.name) == 'Literal':
+            if self.v8 and node.get('typeDescriptions'):
+                literals_nodes.add(Literal(
+                    hex_value=node.get('hexValue'),
+                    str_value=node.get('value'),
+                    sub_type=node.get('typeDescriptions').get('typeString'),
+                    token_type=node.get('kind', ),
+                ))
+            elif not self.v8 and node.get('attributes'):
+                literals_nodes.add(Literal(
+                    hex_value=node.get('attributes').get('hexvalue'),
+                    str_value=node.get('attributes').get('value'),
+                    sub_type=node.get('attributes').get('type'),
+                    token_type=node.get('attributes').get('token'),
+                ))
+        else:
+            for k, v in node.items():
+                if isinstance(v, dict):
+                    self._traverse_nodes(v, literals_nodes)
+                if isinstance(v, list):
+                    for c in v:
+                        if isinstance(c, dict):
+                            self._traverse_nodes(c, literals_nodes)

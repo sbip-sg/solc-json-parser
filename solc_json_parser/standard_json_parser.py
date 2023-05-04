@@ -297,3 +297,30 @@ class StandardJsonParser(BaseParser):
             return None
         filename, contract_name = r
         return self.__get_binary(contract_name, filename, deploy=True)[0][2]
+
+
+    def get_literals(self, contract_name: str, only_value=False) -> dict:
+        """
+        Get all literals(number, address, string, other) in the contract.
+        for 'other' type, if only_value is True, return the string value
+        - `contract_name`: contract_name in string
+        - `only_value`: set to true to get only values, otherwise get all literal objects
+        """
+
+        literals_nodes = set()
+        contract_node = None
+        for filename, unit in self.solc_json_ast.items():
+            root_node = unit.get('ast')
+            for i, node in enumerate(root_node[self.keys.children]):
+                if node[self.keys.name] == "ContractDefinition":
+                    info_node = node if self.v8 else node.get('attributes')
+                    if info_node['name'] == contract_name:
+                        contract_node = node
+                        break
+
+        # traverse the dictionary and get all the literals recursively
+        self._traverse_nodes(contract_node, literals_nodes)
+
+        literals = s.process_literal_node(literals_nodes, only_value)
+
+        return literals

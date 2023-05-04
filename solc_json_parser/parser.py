@@ -16,6 +16,7 @@ class SolidityAstError(ValueError):
     pass
 
 
+@s.deprecated_class
 class SolidityAst():
 
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
