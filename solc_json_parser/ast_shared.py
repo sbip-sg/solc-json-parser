@@ -120,7 +120,7 @@ def detect_solc_version(source_or_source_file: str) -> Optional[str]:
     return versions[-1] if versions else None
 
 
-def symbols_to_ids_from_ast_v8(ast: Dict[Any, Any]) -> Dict[str, int]:
+def symbols_to_ids_from_ast_v8(ast: dict) -> Dict[str, int]:
     syms = [c['ast']['exportedSymbols'] for c in ast.values()]
     return {k: v[0] for m in syms for k, v in m.items()}
 

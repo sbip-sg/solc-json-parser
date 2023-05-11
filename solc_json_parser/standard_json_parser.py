@@ -109,11 +109,9 @@ def source_by_pc(input_json: dict, output_json: dict, pc: int, evm: dict, deploy
     for k in range(pc, -1, -1):
         idx = pc2idx.get(k, None)
         if idx is not None:
-            print(idx)
             if idx >= code_len:
                 continue
             t_block = code[idx]
-            print(t_block)
             file_key = t_block.get('source', -1)
             if file_key >= 0 and file_key < sources_len:
                 block = t_block
@@ -165,10 +163,19 @@ def has_compilation_error(output_json: dict) -> bool:
     return False
 
 
+def mark_select_all(input_json):
+    """Mark all fields to be generated in the outputs for analysis"""
+    input_json['settings']['outputSelection'] = {'*': {'*': [ '*' ], '': ['ast']}}
+    return input_json
+
+
 class StandardJsonParser(BaseParser):
     def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
         self.solc_version: str = version
         self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+
+        self.input_json = mark_select_all(self.input_json)
+
         self.solc_json_ast: Dict[int, dict] = {}
         self.is_standard_json = True
         self.pre_configure_compatible_fields()
