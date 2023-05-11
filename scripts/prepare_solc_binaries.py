@@ -6,6 +6,8 @@ import os
 import stat
 import requests
 
+list_json_url = "https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/linux-amd64/list.json"
+
 def make_executable(file_path):
     st = os.stat(file_path)
     os.chmod(file_path, st.st_mode | stat.S_IEXEC)
@@ -27,8 +29,11 @@ base_url = "https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/linux-a
 folder = os.path.expanduser("~/.solcx/")
 os.makedirs(folder, exist_ok=True)
 
-with open('solc.json', 'r') as f:
-    data = json.load(f)
+# with open('solc.json', 'r') as f:
+#     data = json.load(f)
+
+resp = requests.get(list_json_url)
+data = resp.json()
 
 for build in data['builds']:
     version = build['version']
