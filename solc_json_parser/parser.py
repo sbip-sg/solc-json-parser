@@ -1043,7 +1043,10 @@ class SolidityAst():
                 elif literal.sub_type.startswith("int"):
                     if only_value:
                         if literal.str_value.startswith('0x'):
-                            literals['number'].add(int(literal.str_value, 16))
+                            if 40 <= len(literal.str_value) <= 42:
+                                literals['address'].add(literal.str_value)
+                            else:
+                                literals['number'].add(int(literal.str_value, 16))
                         elif literal.sub_type.split()[1].isdecimal():
                             literals['number'].add(int(literal.sub_type.split()[1]))
                         else:
