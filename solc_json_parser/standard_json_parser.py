@@ -171,6 +171,7 @@ def mark_select_all(input_json):
 
 class StandardJsonParser(BaseParser):
     def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
+        self.file_path = None
         self.solc_version: str = version
         self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
 

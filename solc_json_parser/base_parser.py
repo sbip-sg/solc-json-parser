@@ -22,6 +22,7 @@ class BaseParser():
         self.exported_symbols: Dict[str, int] = {}
         self.keys = None
         self.is_standard_json = False
+        self.file_path = None # to be overridden by CombinedJsonParser
 
     def build(self):
         raise NotImplementedError
