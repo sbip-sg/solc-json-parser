@@ -25,5 +25,4 @@ class TestFunctionSourceByStandardJsonParser(unittest.TestCase):
 
         for (fname, lines) in tests:
             func = self.parser.function_by_name('PepeToken', fname)
-            lines = func.line_num
-            self.assertEqual(lines, lines, 'Start and end line numbers of the function setRule is not correct')
+            assert lines ==  func.line_num, 'Start and end line numbers of the function setRule is not correct'

@@ -226,8 +226,8 @@ class StandardJsonParser(BaseParser):
         line_number_range, _ = self.get_line_number_range_and_source(line_number_range_raw)
         contract_id = node.get('id')
 
-        assert node.get('name') is not None
-        assert node.get('abstract') is not None
+        # assert node.get('name') is not None
+        # assert node.get('abstract') is not None
         # assert node.get('baseContracts') is not None
 
         contract_kind = node.get('contractKind')

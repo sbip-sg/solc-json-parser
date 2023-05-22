@@ -1,0 +1,365 @@
+{
+  "TetherToken:transferFrom:11283:BugType.ASSERTION_FAILURE": {
+    "bytecode_location": 11283,
+    "function": "transferFrom",
+    "deploy": false,
+    "bug_type": "AssertionFailure",
+    "opcode": "REVERT",
+    "input": [
+      {
+        "func_name": "transferFrom",
+        "input": [
+          "0x1111111111111111111111111111111111111111",
+          "0x1111111111111111111111111111111111111111",
+          1
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      29,
+      29
+    ]
+  },
+  "TetherToken:transfer:11283:BugType.ASSERTION_FAILURE": {
+    "bytecode_location": 11283,
+    "function": "transfer",
+    "deploy": false,
+    "bug_type": "AssertionFailure",
+    "opcode": "REVERT",
+    "input": [
+      {
+        "func_name": "transfer",
+        "input": [
+          "0x1111111111111111111111111111111111111111",
+          1
+        ],
+        "value": 0,
+        "from_addr": "0x2222222222222222222222222222222222222222"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      29,
+      29
+    ]
+  },
+  "TetherToken:setParams:6197:BugType.OVERFLOW": {
+    "bytecode_location": 6197,
+    "function": "setParams",
+    "deploy": false,
+    "bug_type": "IntegerOverflow",
+    "opcode": 10,
+    "input": [
+      {
+        "func_name": "setParams",
+        "input": [
+          1,
+          1
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      435,
+      435
+    ]
+  },
+  "TetherToken:approve:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "approve",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "approve",
+        "input": [
+          "0x0000000000000000000000000000000000000000",
+          65281
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      369,
+      369
+    ]
+  },
+  "TetherToken:transfer:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "transfer",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "transfer",
+        "input": [
+          "0x0000000000000000000000000000000000000000",
+          0
+        ],
+        "value": 0,
+        "from_addr": "0x2222222222222222222222222222222222222222"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      340,
+      340
+    ]
+  },
+  "TetherToken:transfer:0:BugType.POSSIBLE_ACCESS_CONTROL_BUG": {
+    "bytecode_location": 0,
+    "function": "transfer",
+    "deploy": false,
+    "bug_type": "POSSIBLE_ACCESS_CONTROL",
+    "opcode": [
+      1.1854564189850453e+76,
+      7.788968227664816e+76
+    ],
+    "input": [
+      {
+        "func_name": "transfer",
+        "input": [
+          "0x0000000000000000000000000000000000000000",
+          0
+        ],
+        "value": 0,
+        "from_addr": "0xb8d91f30f2c7875284938f3ecf551474076dff60"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      340,
+      340
+    ]
+  },
+  "TetherToken:deprecate:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "deprecate",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "deprecate",
+        "input": [
+          "0x0000000000000000000000000000000000000000"
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      387,
+      387
+    ]
+  },
+  "TetherToken:addBlackList:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "addBlackList",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "addBlackList",
+        "input": [
+          "0x0000000000000000000000000000000000000000"
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      281,
+      281
+    ]
+  },
+  "TetherToken:transferFrom:0:BugType.POSSIBLE_ACCESS_CONTROL_BUG": {
+    "bytecode_location": 0,
+    "function": "transferFrom",
+    "deploy": false,
+    "bug_type": "POSSIBLE_ACCESS_CONTROL",
+    "opcode": [
+      9.884536891378231e+76,
+      3.0444680392144246e+75,
+      5.200898667903524e+76
+    ],
+    "input": [
+      {
+        "func_name": "transferFrom",
+        "input": [
+          "0x1111111111111111111111111111111111111111",
+          "0xcb08282fda2a6354bd90f4e31924eb39c7c0bc9b",
+          0
+        ],
+        "value": 0,
+        "from_addr": "0xb8d91f30f2c7875284938f3ecf551474076dff60"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      350,
+      350
+    ]
+  },
+  "TetherToken:transferFrom:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "transferFrom",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "transferFrom",
+        "input": [
+          "0x6b8e030c50ed5fae7d1f337b68f3331ff3ffb9d3",
+          "0x0000000000000000000000000000000000000000",
+          0
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      350,
+      350
+    ]
+  },
+  "TetherToken:removeBlackList:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "removeBlackList",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": [
+      {
+        "func_name": "removeBlackList",
+        "input": [
+          "0x0000000000000000000000000000000000000000"
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      286,
+      286
+    ]
+  },
+  "TetherToken:allowance:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "allowance",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": {
+      "func_name": "allowance",
+      "input": [
+        "0x38b0fdea083d07033917ba7884ccd2e05e30557a",
+        "0x0000000000000000000000000000000000000000"
+      ],
+      "value": 0,
+      "from_addr": "0x1111111111111111111111111111111111111111"
+    },
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      378,
+      378
+    ]
+  },
+  "TetherToken:transferFrom:11096:BugType.ASSERTION_FAILURE": {
+    "bytecode_location": 11096,
+    "function": "transferFrom",
+    "deploy": false,
+    "bug_type": "AssertionFailure",
+    "opcode": "REVERT",
+    "input": [
+      {
+        "func_name": "transferFrom",
+        "input": [
+          "0x1111111111111111111111111111111111111111",
+          "0x38b0fdea083d07033917ba7884ccd2e05e30557a",
+          1.157920892373162e+77
+        ],
+        "value": 0,
+        "from_addr": "0x1111111111111111111111111111111111111111"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      17,
+      17
+    ]
+  },
+  "TetherToken:transfer:11096:BugType.ASSERTION_FAILURE": {
+    "bytecode_location": 11096,
+    "function": "transfer",
+    "deploy": false,
+    "bug_type": "AssertionFailure",
+    "opcode": "REVERT",
+    "input": [
+      {
+        "func_name": "transfer",
+        "input": [
+          "0x38b0fdea083d07033917ba7884ccd2e05e30557a",
+          1.157920892373162e+77
+        ],
+        "value": 0,
+        "from_addr": "0x2222222222222222222222222222222222222222"
+      }
+    ],
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      17,
+      17
+    ]
+  },
+  "TetherToken:balanceOf:0:BugType.ADDRESS_VALIDATION": {
+    "bytecode_location": 0,
+    "function": "balanceOf",
+    "deploy": false,
+    "bug_type": "AddressValidation",
+    "opcode": "NA",
+    "input": {
+      "func_name": "balanceOf",
+      "input": [
+        "0x0000000000000000000000000000000000000000"
+      ],
+      "value": 0,
+      "from_addr": "0x2222222222222222222222222222222222222222"
+    },
+    "contract": "TetherToken",
+    "is_yul": false,
+    "line_number": [
+      360,
+      360
+    ]
+  }
+}
