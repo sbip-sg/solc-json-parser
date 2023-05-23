@@ -103,7 +103,7 @@ class CombinedJsonParser(BaseParser):
 
 
 
-    #@cache
+    @cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
         '''
         Params:
@@ -155,7 +155,7 @@ class CombinedJsonParser(BaseParser):
             size = 2  # opcode size: one byte as hex takes two chars
             datasize = 0
 
-            print(f'{contract_name} pc {offset} c {c}')
+            # print(f'{contract_name} pc {offset} c {c}')
 
             opcode = c.get('name').split()[0]
 
