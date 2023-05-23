@@ -43,8 +43,7 @@ import json
 from solc_json_parser.standard_json_parser import StandardJsonParser
 with open('contracts/standard_json/75b8.standard-input.json') as f:
     input_json = json.load(f)
-OUTPUT_SELECT_ALL = {'*': {'*': [ '*' ], '': ['ast']}}
-input_json['settings']['outputSelection'] = OUTPUT_SELECT_ALL
+
 version = '0.8.4'
 parser = StandardJsonParser(input_json, version)
 
