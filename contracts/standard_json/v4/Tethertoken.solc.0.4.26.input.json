@@ -11,8 +11,8 @@
       "useLiteralContent": true
     },
     "optimizer": {
-      "enabled": true,
-      "runs": 100
+      "enabled": false,
+      "runs": 0
     },
     "outputSelection": {
       "*": {

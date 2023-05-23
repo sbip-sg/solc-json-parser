@@ -4,12 +4,12 @@ from solc_json_parser.ast_shared import get_in
 from solc_json_parser.standard_json_parser import StandardJsonParser
 
 
-class TestV4Contract(unittest.TestCase):
+class TestV6Contract(unittest.TestCase):
     def setUp(self):
-        main_contract = "TetherToken"
-        version = "0.4.26"
+        main_contract = "MaskToken"
+        version = "0.6.6"
 
-        with open('./contracts/standard_json/v4/Tethertoken.solc.0.4.26.input.json', 'r') as f:
+        with open('./contracts/standard_json/v6/MaskToken.solc.0.6.6.input.json', 'r') as f:
             input_json = json.load(f)
 
         parser = StandardJsonParser(input_json, version)
@@ -17,28 +17,14 @@ class TestV4Contract(unittest.TestCase):
         self.main_contract = main_contract
         self.parser = parser
 
-    def test_deployed_bin(self):
-        with open('./contracts/standard_json/v4/TetherToken.0.4.26.deployed.bin', 'r') as f:
-            expected = f.read().strip()
-
-        actual = get_in(self.parser.output_json,
-                        'contracts',
-                        'TetherToken.sol',
-                        'TetherToken',
-                        'evm',
-                        'deployedBytecode',
-                        'object').strip()
-
-        assert expected[:-68] == actual[:-68], 'Deployed bytecode is not correct'
 
     def test_source_by_pc(self):
         tests = [
             # pc or function name -> (line start and end)
-            ('removeBlackList', (286, 289),),
-            ('transferFrom', (350, 357),),
-            (11283, (29, 29),),
-            (11096, (17, 17),),
-            (6197, (435, 435)),
+            ('approve', (463, 466),),
+            ('_approve', (601, 607),),
+            (3012, (538, 538),),
+            (3698, (284, 284),),
         ]
 
         for (fname_or_pc, lines) in tests:
