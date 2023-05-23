@@ -4,7 +4,7 @@ from solc_json_parser.ast_shared import get_in
 from typing import Dict, Any, List
 
 
-class TestCase():
+class ExpectedResult():
     def __init__(self, source: str, contract: str, use_deploy_code: bool, expected_pc_start_lines = List, solc_options: Dict={}):
         self.source = source
         self.contract = contract
@@ -15,7 +15,7 @@ class TestCase():
 class TestSourceByPc(unittest.TestCase):
     def test_source_by_pc_single_source(self):
         test_cases = [
-            TestCase('./tests/test_contracts/IntegerOverflow.sol',
+            ExpectedResult('./tests/test_contracts/IntegerOverflow.sol',
                      'IntegerOverflow',
                      False,
                      [(333, 9),
@@ -24,17 +24,17 @@ class TestSourceByPc(unittest.TestCase):
                       (321, 16),
                       (338, 9),
                       (377, 10),]),
-            TestCase('./tests/test_contracts/ms/MultiSourceLib.sol',
+            ExpectedResult('./tests/test_contracts/ms/MultiSourceLib.sol',
                      'MultiSourceUtils',
                      False,
                      [(123, 15),]),
-            TestCase('./tests/test_contracts/test_with_exp_abi.sol',
+            ExpectedResult('./tests/test_contracts/test_with_exp_abi.sol',
                      'Test',
                      False,
                      [(278, 15),
                       (293, 16)],
                      {'optimize': True, 'optimize_runs': 200}),
-            TestCase('./tests/test_contracts/Test.sol',
+            ExpectedResult('./tests/test_contracts/Test.sol',
                      'Test',
                      False,
                      [(200, 14),
@@ -49,11 +49,11 @@ class TestSourceByPc(unittest.TestCase):
 
     def test_source_by_pc_multiple_sources(self):
         test_cases = [
-            TestCase('./tests/test_contracts/ms/MultiSource.sol',
+            ExpectedResult('./tests/test_contracts/ms/MultiSource.sol',
                      'MultiSourceUtils',
                      False,
                      [(123, 15),]),
-            TestCase('./tests/test_contracts/ms/MultiSource.sol',
+            ExpectedResult('./tests/test_contracts/ms/MultiSource.sol',
                      'MultiSource',
                      False,
                      [(132, 17),]),

@@ -5,7 +5,6 @@ import semantic_version
 import logging
 import addict
 import warnings
-import solcx
 import json
 import os
 import re
@@ -16,7 +15,17 @@ from Crypto.Hash import keccak
 SOLC_JSON_AST_FOLDER = "./solc_json_ast"
 PARSED_JSON = "./parsed_json"
 
-INSTALLABLE_VERSION = []
+# Installable version supported on linux-amd64
+INSTALLABLE_VERSION = [
+    "0.4.10", "0.4.11", "0.4.12", "0.4.13", "0.4.14", "0.4.15", "0.4.16", "0.4.17", "0.4.18", "0.4.19", "0.4.20", "0.4.21", "0.4.22", "0.4.23", "0.4.24", "0.4.25", "0.4.26",
+    "0.5.0", "0.5.1", "0.5.2", "0.5.3", "0.5.4", "0.5.5", "0.5.6", "0.5.7", "0.5.8", "0.5.9", "0.5.10", "0.5.11", "0.5.12", "0.5.13", "0.5.14", "0.5.15", "0.5.16", "0.5.17",
+    "0.6.0", "0.6.1", "0.6.2", "0.6.3", "0.6.4", "0.6.5", "0.6.6", "0.6.7", "0.6.8", "0.6.9", "0.6.10", "0.6.11", "0.6.12",
+    "0.7.0", "0.7.1", "0.7.2", "0.7.3", "0.7.4", "0.7.5", "0.7.6",
+    "0.8.0", "0.8.1", "0.8.2", "0.8.3", "0.8.4", "0.8.5", "0.8.6", "0.8.7", "0.8.8", "0.8.9", "0.8.10", "0.8.11", "0.8.12", "0.8.13", "0.8.14", "0.8.15", "0.8.16", "0.8.17", "0.8.18", "0.8.19"
+]
+
+
+INSTALLABLE_VERSION = sorted([Version(v) for v in INSTALLABLE_VERSION])
 
 INTERFACE_OR_LIB_KIND = set(['interface', 'library'])
 
@@ -65,18 +74,24 @@ def get_in(d, key: Any, *nkeys) -> Any:
         return get_in(nd, *nkeys)
     return nd
 
+def assoc_in(d, keys, value):
+    """Associates a value with a sequence of keys in a nested dictionary"""
+    key = keys[0]
+    if len(keys) == 1:
+        d[key] = value
+    else:
+        if key not in d or not isinstance(d[key], dict):
+            d[key] = {}
+        assoc_in(d[key], keys[1:], value)
+    return d
+
 
 def get_all_installable_versions():
     '''
     Returns a cached list of solc versions available for install,
     version list is sorted in ascending order
     '''
-    global INSTALLABLE_VERSION
-    if INSTALLABLE_VERSION:
-        return INSTALLABLE_VERSION
-    else:
-        INSTALLABLE_VERSION = sorted(solcx.get_installable_solc_versions())
-        return INSTALLABLE_VERSION
+    return INSTALLABLE_VERSION
 
 def version_str_from_line(line) -> Optional[str]:
     '''

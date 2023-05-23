@@ -33,16 +33,20 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
 
 def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
     '''
-    Build pc2idx map from evm json. If deploy is True, build it for deployment code.
+    Build pc2idx map from one evm dictionary. If deploy is True, build it using deployment code.
     Returns a tuple: (code, pc2idx)
     '''
     evm_key = 'bytecode' if deploy else 'deployedBytecode'
+
+    # opcodes list (including operand datasize information for the opcode)
+    # Example path in standard json: '.contracts."FILE_PATH.SOL"."CONTRACT_NAME".evm.deployedBytecode.opcodes'
     opcodes = evm[evm_key]['opcodes'].split()
+    # source code mapping blocks
+    # Example path in standard json: '.contracts."FILE_PATH.SOL"."CONTRACT_NAME".evm.legacyAssembly.".data"."0".".code"'
     code = evm['legacyAssembly']['.code'] if deploy else evm['legacyAssembly']['.data']['0']['.code']
 
-
-    offset = 0  # address offset / program counter
-    idx = 0     # index of code list
+    offset = 0  # program counter: byte offset
+    idx = 0     # index of source code mapping blocks
     idx2pc = {} # dict: index -> pc
     op_idx = 0  # idx value in contract opcodes list
 
@@ -73,7 +77,7 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
             op_idx += 1
 
         size += datasize
-        # print(f'PC {offset:4} IDX: {idx:4} {c}')
+        # print(f'PC {offset:4} IDX: {idx:4} datasize: {datasize:2} {c}')
         idx += 1
         offset += int(size / 2)
         op_idx += 1
@@ -103,24 +107,20 @@ def source_content_by_fid(input_json: dict, output_json: dict, fid: int):
 def source_by_pc(input_json: dict, output_json: dict, pc: int, evm: dict, deploy=False):
     code, pc2idx = build_pc2idx(evm, deploy)
     code_len = len(code)
-    sources_len = len(input_json['sources'])
 
     block = None
     for k in range(pc, -1, -1):
         idx = pc2idx.get(k, None)
         if idx is not None:
-            if idx >= code_len:
+            if idx >= code_len: # code index is outside code list
                 continue
-            t_block = code[idx]
-            file_key = t_block.get('source', -1)
-            if file_key >= 0 and file_key < sources_len:
-                block = t_block
-                break
+            block = code[idx]
+            break
 
     if block is None:
         return None
 
-    fid = block.get('source', -1)
+    fid = block.get('source', 0) # some times there is no `source` field.
     begin = block.get('begin')
     end = block.get('end')
     # name = block.get('name')
@@ -163,18 +163,24 @@ def has_compilation_error(output_json: dict) -> bool:
     return False
 
 
-def mark_select_all(input_json):
-    """Mark all fields to be generated in the outputs for analysis"""
-    input_json['settings']['outputSelection'] = {'*': {'*': [ '*' ], '': ['ast']}}
+def override_settings(input_json):
+    """
+    Override settings:
+    - Disable optimization which could confuse source mapping
+    - Mark all fields to be generated in the outputs for analysis
+    """
+    s.assoc_in(input_json, ['settings', 'optimizer', 'enabled'], False)
+    s.assoc_in(input_json, ['settings', 'outputSelection'], {'*': {'*': [ '*' ], '': ['ast']}})
     return input_json
 
 
 class StandardJsonParser(BaseParser):
     def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
+        self.file_path = None
         self.solc_version: str = version
         self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
 
-        self.input_json = mark_select_all(self.input_json)
+        self.input_json = override_settings(self.input_json)
 
         self.solc_json_ast: Dict[int, dict] = {}
         self.is_standard_json = True
@@ -225,8 +231,8 @@ class StandardJsonParser(BaseParser):
         line_number_range, _ = self.get_line_number_range_and_source(line_number_range_raw)
         contract_id = node.get('id')
 
-        assert node.get('name') is not None
-        assert node.get('abstract') is not None
+        # assert node.get('name') is not None
+        # assert node.get('abstract') is not None
         # assert node.get('baseContracts') is not None
 
         contract_kind = node.get('contractKind')
