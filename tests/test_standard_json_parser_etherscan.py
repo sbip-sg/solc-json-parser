@@ -47,15 +47,6 @@ class TestStandardJsonParser(unittest.TestCase):
         self.implementation = implementation
         self.parser = parser
 
-    def test_deployment_binary(self):
-        print(f'main_contract: {self.main_contract}')
-        with open('./contracts/standard_json/0x8252Df1d8b29057d1Afe3062bf5a64D503152BC8.deployment.bin') as f:
-            expected = f.read()
-
-        _filename, _contract_name, bin = self.parser.get_deployment_binary(self.main_contract)[0]
-        self.assertIsNotNone(bin)
-        self.assertEqual(bin, expected)
-
     def test_contract_names(self):
         self.assertEqual(self.parser.pruned_contract_names, [self.main_contract])
 

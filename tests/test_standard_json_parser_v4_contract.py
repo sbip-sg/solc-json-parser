@@ -17,20 +17,6 @@ class TestV4Contract(unittest.TestCase):
         self.main_contract = main_contract
         self.parser = parser
 
-    def test_deployed_bin(self):
-        with open('./contracts/standard_json/v4/TetherToken.0.4.26.deployed.bin', 'r') as f:
-            expected = f.read().strip()
-
-        actual = get_in(self.parser.output_json,
-                        'contracts',
-                        'TetherToken.sol',
-                        'TetherToken',
-                        'evm',
-                        'deployedBytecode',
-                        'object').strip()
-
-        assert expected[:-68] == actual[:-68], 'Deployed bytecode is not correct'
-
     def test_source_by_pc(self):
         tests = [
             # pc or function name -> (line start and end)

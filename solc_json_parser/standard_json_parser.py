@@ -163,9 +163,14 @@ def has_compilation_error(output_json: dict) -> bool:
     return False
 
 
-def mark_select_all(input_json):
-    """Mark all fields to be generated in the outputs for analysis"""
-    input_json['settings']['outputSelection'] = {'*': {'*': [ '*' ], '': ['ast']}}
+def override_settings(input_json):
+    """
+    Override settings:
+    - Disable optimization which could confuse source mapping
+    - Mark all fields to be generated in the outputs for analysis
+    """
+    s.assoc_in(input_json, ['settings', 'optimizer', 'enabled'], False)
+    s.assoc_in(input_json, ['settings', 'outputSelection'], {'*': {'*': [ '*' ], '': ['ast']}})
     return input_json
 
 
@@ -175,7 +180,7 @@ class StandardJsonParser(BaseParser):
         self.solc_version: str = version
         self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
 
-        self.input_json = mark_select_all(self.input_json)
+        self.input_json = override_settings(self.input_json)
 
         self.solc_json_ast: Dict[int, dict] = {}
         self.is_standard_json = True

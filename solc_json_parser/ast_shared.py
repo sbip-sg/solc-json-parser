@@ -65,6 +65,17 @@ def get_in(d, key: Any, *nkeys) -> Any:
         return get_in(nd, *nkeys)
     return nd
 
+def assoc_in(d, keys, value):
+    """Associates a value with a sequence of keys in a nested dictionary"""
+    key = keys[0]
+    if len(keys) == 1:
+        d[key] = value
+    else:
+        if key not in d or not isinstance(d[key], dict):
+            d[key] = {}
+        assoc_in(d[key], keys[1:], value)
+    return d
+
 
 def get_all_installable_versions():
     '''
