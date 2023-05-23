@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import unittest
 from solc_json_parser.flatten import FlattenLine, FlattenSolidity
 
-class TestCase():
+class ExpectedMapping():
     def __init__(self, path: str, expected_line_mappings = [FlattenLine]):
         self.path = path
         self.expected_line_mappings = expected_line_mappings
@@ -20,7 +20,7 @@ class TestSourceByPc(unittest.TestCase):
                 self.assertEqual(fline.filename, e.filename, f'{hint} @ {t.path}: {e}')
 
     def test_flatten_line_mapping_with_no_imports(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/A.sol',
             [
                 FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 3, 'contract A{'),
@@ -28,7 +28,7 @@ class TestSourceByPc(unittest.TestCase):
 
 
     def test_flatten_line_mapping_with_single_imports(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/B.sol',
             [
                 FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
@@ -38,7 +38,7 @@ class TestSourceByPc(unittest.TestCase):
 
 
     def test_flatten_line_mapping_with_multiple_imports(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/C.sol',
             [
                 FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
@@ -47,7 +47,7 @@ class TestSourceByPc(unittest.TestCase):
             ]))
 
     def test_flatten_line_mapping_with_selective_imports(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/D.sol',
             [
                 FlattenLine('path_ignored', 'A.sol', 3, 'contract A{', 7, 'contract A{'),
@@ -58,7 +58,7 @@ class TestSourceByPc(unittest.TestCase):
 
 
     def test_flatten_line_mapping_with_complex_01_contract(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/01/01_13_INSURToken.sol',
             [
                 FlattenLine('path_ignored', '01_13_INSURToken.sol', 56, 'function addSender(address _from) external onlyAdmin {', 1723, 'function addSender(address _from) external onlyAdmin {'),
@@ -67,7 +67,7 @@ class TestSourceByPc(unittest.TestCase):
             ]))
 
     def test_flatten_line_mapping_with_complex_02_contract(self):
-        self.run_tests(TestCase(
+        self.run_tests(ExpectedMapping(
             './tests/test_contracts/flatten/02/01_20_RubicProxy.sol',
             [
                 FlattenLine('path_ignored', '01_20_RubicProxy.sol', 119, 'function sweepTokens(address _token, uint256 _amount) external onlyAdmin {', 2429, 'function sweepTokens(address _token, uint256 _amount) external onlyAdmin {'),

@@ -23,6 +23,7 @@ jobs:
 
     - name: Test
       run: |
+        pip install -r requirements.txt
         pip install .
         python scripts/prepare_solc_binaries.py
-        python -m unittest
+        pytest

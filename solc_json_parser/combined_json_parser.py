@@ -103,9 +103,15 @@ class CombinedJsonParser(BaseParser):
 
 
 
-    @cache
+    #@cache
     def __parse_asm_data(self, contract_name, deploy=False) -> Dict[str, Any]:
-        '''Parse `asm.data` returns a dict of
+        '''
+        Params:
+        - contract_name: str
+        - deploy: bool, default False
+                  Whether to include the deployment code. Set to false to use runtime binary.
+
+        Parse `asm.data` returns a dict of
         - `idx` source file index, default to 0
         - `code` list,
         - `pc2idx` a dict from program counter to `code` index'''
@@ -135,8 +141,8 @@ class CombinedJsonParser(BaseParser):
         else:
             code = asm_data.get(f'{0}').get('.code')
 
-        offset = 0  # address offset / program counter
-        idx = 0     # index of code list
+        offset = 0  # program counter, offset in bytes in the binary
+        idx = 0     # index of source code mapping
         idx2pc = {} # dict: index -> pc
         op_idx = 0  # idx value in contract opcodes list
 
@@ -149,7 +155,7 @@ class CombinedJsonParser(BaseParser):
             size = 2  # opcode size: one byte as hex takes two chars
             datasize = 0
 
-            # print(f'{contract_name} pc {offset} c {c}')
+            print(f'{contract_name} pc {offset} c {c}')
 
             opcode = c.get('name').split()[0]
 
