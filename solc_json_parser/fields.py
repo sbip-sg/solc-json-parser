@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 @dataclass
 class Field:
     inherited_from:   str
     visibility: str
     name:       str
-    line_num:   tuple  # (start, end)
+    source_id: Optional[str] # source id, e.g, "contracts/DepToken.sol"
+    line_num:   tuple  # (start, end) both sides inclusive
 
 
 @dataclass
@@ -27,6 +28,7 @@ class Function:
     modifiers:   list
     kind:        str
     state_mutability: str
+    source_id: Optional[str]
     line_num: tuple  # (start, end)
 
 
@@ -35,6 +37,7 @@ class Event:
     name: str
     signature:  str
     anonymous: bool
+    source_id: Optional[str]
     line_num: tuple
     raw: str
 
@@ -48,9 +51,11 @@ class ContractData:
     fields:         List[Field]
     functions:      List[Function]
     modifiers:      List[Modifier]
+    source_id:    Optional[str]
     line_num:       tuple  # (start, end)
     contract_id:    int    # unique id in ast per solc compilation
     events:         List[Event]
+
 @dataclass
 class Literal:
     token_type: str
@@ -64,7 +69,3 @@ class Literal:
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.str_value == other.str_value \
                                                  and self.sub_type == other.sub_type
-
-
-
-

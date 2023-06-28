@@ -1,3 +1,4 @@
+# This file is deprecated, will be removed soon
 import copy
 from operator import itemgetter
 from semantic_version import Version

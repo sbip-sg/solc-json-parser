@@ -270,6 +270,13 @@ class StandardJsonParser(BaseParser):
         return None
 
 
+    def function_by_name(self, contract_name: str, function_name: str) -> Function:
+        """Return a function for a given contract name and function name"""
+        contract = self.contract_by_name(contract_name)
+        funcs    = self.functions_in_contract(contract)
+        return next(fn for fn in funcs if fn.name == function_name)
+
+
     def __get_binary(self, contract_name: str, filename: Optional[str], deploy=False) -> List[Tuple[str, str, str]]:
         """
         Returns a list of tuples, each tuple is: `(filename, contract_name, binary)`

@@ -7,6 +7,22 @@ from . import ast_shared as s
 from .ast_shared import SolidityAstError
 import copy
 
+def add_inherited_function_fields(data_dict: Dict[int, ContractData]):
+    for contract_id, contract in data_dict.items():
+        if len(contract.base_contracts) != 0:
+            for base_contract_id in contract.base_contracts:
+                base_contract = data_dict.get(base_contract_id)
+                base_contract_name = base_contract.name
+                for field in base_contract.fields:
+                    new_field = copy.deepcopy(field)
+                    new_field.inherited_from = base_contract_name
+                    contract.fields.append(new_field)
+                for function in base_contract.functions:
+                    new_function = copy.deepcopy(function)
+                    new_function.inherited_from = base_contract_name
+                    contract.functions.append(new_function)
+
+
 class BaseParser():
     FIELD_VISIBILITY_ALL = frozenset(('default', 'internal', 'public', 'private'))
     FIELD_VISIBILITY_NON_PRIVATE = frozenset(('default', 'internal', 'public'))
@@ -151,7 +167,8 @@ class BaseParser():
         return_signature = self.get_signature("", return_type, kind)
         return Function(inherited_from=inherited_from, abstract=abstract, visibility=visibility, raw=raw,
                         signature=signature, name=name, return_signature=return_signature, kind=kind,
-                        modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability)
+                        modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability,
+                        source_id=node.get("source_id"))
 
     def get_yul_lines(self, contract_name: str, deploy: bool) -> List[str]:
         if not self.v8:
@@ -177,7 +194,7 @@ class BaseParser():
         visibility = node.get('visibility')
         name = node.get('name')
         inherited_from = ""
-        return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range)
+        return Field(inherited_from=inherited_from, visibility=visibility, name=name, line_num=line_number_range, source_id=node.get("source_id"))
 
     def _process_event(self, node: Dict) -> Event:
         raw, line_number_range = self.get_raw_from_src(node)
@@ -195,7 +212,7 @@ class BaseParser():
         anonymous = node.get('anonymous')
 
         signature = self.get_signature(name, parameters, "event")
-        return Event(raw=raw, name=name, anonymous=anonymous, line_num=line_number_range, signature=signature)
+        return Event(raw=raw, name=name, anonymous=anonymous, line_num=line_number_range, signature=signature, source_id=node.get("source_id"))
 
     def _process_modifier(self, node: Dict) -> Modifier:
         if self.v8:
@@ -236,6 +253,7 @@ class BaseParser():
 
     def _process_contract(self, node: Dict) -> ContractData:
         contract_meta_data = self._get_contract_meta_data(node)
+        source_id = node.get("source_id", "")
         contract_id, contract_kind, is_abstract, contract_name, base_contracts, line_number_range = contract_meta_data
 
         functions = []
@@ -244,6 +262,7 @@ class BaseParser():
         events = []
         keys = self.keys
         for node in node.get(keys.children, []):
+            node["source_id"] = source_id
             if node[keys.name] == "FunctionDefinition":
                 functions.append(self._process_function(node))
             elif node[keys.name] == "VariableDeclaration":
@@ -256,7 +275,7 @@ class BaseParser():
                 # not implemented for other types
                 pass
 
-        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, line_number_range, contract_id, events)
+        return ContractData(is_abstract, contract_name, contract_kind, base_contracts, fields, functions, modifiers, source_id, line_number_range, contract_id, events)
 
 
     def fields_in_contract(self, contract: ContractData,
@@ -303,24 +322,8 @@ class BaseParser():
 
 
     def _parse(self) -> Dict:
-        def _add_inherited_function_fields(data_dict: Dict[int, ContractData]):
-            for contract_id, contract in data_dict.items():
-                if len(contract.base_contracts) != 0:
-                    for base_contract_id in contract.base_contracts:
-                        base_contract = data_dict.get(base_contract_id)
-                        base_contract_name = base_contract.name
-                        for field in base_contract.fields:
-                            new_field = copy.deepcopy(field)
-                            new_field.inherited_from = base_contract_name
-                            contract.fields.append(new_field)
-                        for function in base_contract.functions:
-                            new_function = copy.deepcopy(function)
-                            new_function.inherited_from = base_contract_name
-                            contract.functions.append(new_function)
+        # todo record source file location
 
-        # if there are n contracts in the same file, there will be n keys in the json,
-        # but we only need the first one[0], because it contains all the contracts, and the rest are the same
-        # ast = self.solc_json_ast.get(list(self.solc_json_ast.keys())[0]).get('ast')
         data_dict = {}
         # use version key to get the correct version cfg
         keys = self.keys
@@ -329,22 +332,24 @@ class BaseParser():
         self.id_to_symbols = {v: k for k, v in self.exported_symbols.items()}
 
         for ast_key in self.solc_json_ast.keys():
-            if ast_key.split(':')[0] in unique_file:
+            source_id = ast_key.split(':')[0]
+            if source_id in unique_file:
                 continue
 
-            unique_file.add(ast_key.split(':')[0])
+            unique_file.add(source_id)
             ast = self.solc_json_ast.get(ast_key).get('ast')
             if ast[keys.name] != "SourceUnit" or ast[keys.children] is None:
                 raise SolidityAstError("Invalid AST")
 
             for i, node in enumerate(ast[keys.children]):
+                node["source_id"] = source_id
                 if node[keys.name] == "PragmaDirective":
                     continue
                 elif node[keys.name] == "ContractDefinition":
                     contract = self._process_contract(node)
                     data_dict[contract.contract_id] = contract
                     assert contract.contract_id > 0, 'Missing contract_id in contract'
-        _add_inherited_function_fields(data_dict)
+        add_inherited_function_fields(data_dict)
         return data_dict
 
     def all_contracts(self) -> List[ContractData]:
