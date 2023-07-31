@@ -171,6 +171,7 @@ def override_settings(input_json):
     """
     s.assoc_in(input_json, ['settings', 'optimizer', 'enabled'], False)
     s.assoc_in(input_json, ['settings', 'outputSelection'], {'*': {'*': [ '*' ], '': ['ast']}})
+    input_json['language']= input_json.get('language', 'Solidity')
     return input_json
 
 
