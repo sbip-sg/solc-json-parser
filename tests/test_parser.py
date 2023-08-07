@@ -435,3 +435,10 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual('JUMPI', ast.pc2opcode_by_contract('Test2', False).get(579))
         self.assertEqual('DUP4', ast.pc2opcode_by_contract('Test2', False).get(1163))
+
+    def test_opcode2pcs(self):
+        ast = CombinedJsonParser('tests/test_contracts/unchecked.sol')
+        expected = {11, 25, 42, 53, 64, 75, 86, 359, 374, 458, 579, 629,
+                    712, 826, 844, 852, 959, 1001, 1048, 1090}
+
+        self.assertEqual(expected, ast.opcode2pcs_by_contract('Test2', False).get('JUMPI'))

@@ -252,9 +252,20 @@ class CombinedJsonParser(BaseParser):
         asm = self.__parse_asm_data(contract_name, deploy=deploy)
         return set((s.get_in(asm, 'pc2idx') or {}).keys())
 
+    @cache
     def pc2opcode_by_contract(self, contract_name: str, deploy) -> Dict[int, str]:
         self.__parse_asm_data(contract_name, deploy=deploy)
         return self.pc2opcode[contract_name][deploy]
+
+    @cache
+    def opcode2pcs_by_contract(self, contract_name: str, deploy) -> Dict[str, set[int]]:
+        pc2opcode = self.pc2opcode_by_contract(contract_name, deploy=deploy)
+        out = {}
+        for pc, opcode in pc2opcode.items():
+            out.setdefault(opcode, set()).add(pc)
+
+        return out
+
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:
