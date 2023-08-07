@@ -260,7 +260,8 @@ def process_literal_node(literals_nodes, only_value):
     return literals
 
 
-def record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int]) -> set[int]:
+def record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int], pc2opcode: Dict[int, str]) -> set[int]:
+    pc2opcode[pc] = opcode
     if opcode == 'JUMPI':
         seen_targets.add(int(code[idx-1].get('value')))
         seen_targets.add(int(pc + 1))

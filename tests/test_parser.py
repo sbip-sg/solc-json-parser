@@ -429,3 +429,9 @@ class TestParser(unittest.TestCase):
         literals = ast.get_literals("Initializable", only_value=True)
         self.assertEqual(1, len(literals['number']))
         self.assertEqual(3, len(literals['string']))
+
+    def test_pc2opcode(self):
+        ast = CombinedJsonParser('tests/test_contracts/unchecked.sol')
+
+        self.assertEqual('JUMPI', ast.pc2opcode_by_contract('Test2', False).get(579))
+        self.assertEqual('DUP4', ast.pc2opcode_by_contract('Test2', False).get(1163))

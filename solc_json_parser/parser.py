@@ -239,6 +239,7 @@ class SolidityAst():
             with open(contract_source_path, 'r') as f:
                 self.source = f.read()
 
+        self.pc2opcode = {}
         self.original_compilation_output :Optional[Dict] = None
         self.try_install_solc = try_install_solc
         self.solc_outputs = solc_outputs
@@ -761,7 +762,8 @@ class SolidityAst():
         return SolidityAst.__skip_deploys(opcodes, deploy_sig_idx+1)
 
     @staticmethod
-    def __record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int]) -> set[int]:
+    def __record_jumps(opcode: str, code: list[Dict[str, Any]], idx: int, pc: int, seen_targets: set[int], pc2opcode: Dict[int, str]) -> set[int]:
+        pc2opcode[pc] = opcode
         if opcode == 'JUMPI':
             seen_targets.add(int(code[idx-1].get('value')))
             seen_targets.add(int(pc + 1))
@@ -777,6 +779,7 @@ class SolidityAst():
 
         combined_json = self.solc_json_ast
         contract = combined_json.get(contract_name)
+        self.pc2opcode[contract_name] = {deploy: {}}
         if contract is None:
             raise SolidityAstError(f'Contract {contract_name} not found in compiled json')
         asm_data = contract.get('asm').get('.code') if deploy else contract.get('asm').get('.data')
@@ -818,7 +821,7 @@ class SolidityAst():
 
             opcode = c.get('name').split()[0]
 
-            SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets)
+            SolidityAst.__record_jumps(opcode, code, i-1, offset, seen_targets, self.pc2opcode[contract_name][deploy])
 
             if opcode == 'PUSHDEPLOYADDRESS':
                 i += 2
