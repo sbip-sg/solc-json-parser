@@ -1,6 +1,6 @@
 from semantic_version import Version
 from typing import Dict, Optional, List, Union, Any
-from functools import cached_property
+from functools import cached_property, cache
 from .fields import Field, Function, ContractData, Modifier, Event, Literal
 from .version_cfg import v_keys
 from . import ast_shared as s
@@ -510,3 +510,16 @@ class BaseParser():
                     for c in v:
                         if isinstance(c, dict):
                             self._traverse_nodes(c, literals_nodes)
+
+    def pc2opcode_by_contract(self, contract_name: str, deploy) -> Dict[int, str]:
+        # to be implemented by child classes
+        ...
+
+    @cache
+    def opcode2pcs_by_contract(self, contract_name: str, deploy) -> Dict[str, set[int]]:
+        pc2opcode = self.pc2opcode_by_contract(contract_name, deploy=deploy)
+        out = {}
+        for pc, opcode in pc2opcode.items():
+            out.setdefault(opcode, set()).add(pc)
+
+        return out
