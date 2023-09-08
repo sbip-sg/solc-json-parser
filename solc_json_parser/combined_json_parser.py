@@ -15,6 +15,7 @@ from .base_parser import BaseParser, SolidityAstError
 
 class CombinedJsonParser(BaseParser):
     def __init__(self, contract_source_path: str, version=None, retry_num=None, solc_options={}, lazy=False, solc_outputs=None, try_install_solc=False):
+        super().__init__()
         self.file_path = None
         self.root_path = None
         self.is_standard_json = False
@@ -257,15 +258,14 @@ class CombinedJsonParser(BaseParser):
         self.__parse_asm_data(contract_name, deploy=deploy)
         return self.pc2opcode[contract_name][deploy]
 
-    @cache
-    def opcode2pcs_by_contract(self, contract_name: str, deploy) -> Dict[str, set[int]]:
-        pc2opcode = self.pc2opcode_by_contract(contract_name, deploy=deploy)
-        out = {}
-        for pc, opcode in pc2opcode.items():
-            out.setdefault(opcode, set()).add(pc)
+    # @cache
+    # def opcode2pcs_by_contract(self, contract_name: str, deploy) -> Dict[str, set[int]]:
+    #     pc2opcode = self.pc2opcode_by_contract(contract_name, deploy=deploy)
+    #     out = {}
+    #     for pc, opcode in pc2opcode.items():
+    #         out.setdefault(opcode, set()).add(pc)
 
-        return out
-
+    #     return out
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:

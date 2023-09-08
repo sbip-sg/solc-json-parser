@@ -2,7 +2,7 @@ import subprocess
 import json
 import os
 from typing import Tuple, Callable, List, Union, Optional, Dict
-from functools import cached_property
+from functools import cached_property, cache
 from .version_cfg import v_keys
 from . import ast_shared as s
 from .ast_shared import SolidityAstError, solc_bin
@@ -31,10 +31,10 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
     return json.loads(solc_output)
 
 
-def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
+def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
     '''
     Build pc2idx map from one evm dictionary. If deploy is True, build it using deployment code.
-    Returns a tuple: (code, pc2idx)
+    Returns a tuple: (code, pc2idx, pc2opcode)
     '''
     evm_key = 'bytecode' if deploy else 'deployedBytecode'
 
@@ -51,6 +51,7 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
     op_idx = 0  # idx value in contract opcodes list
 
     i = 0
+    pc2opcode = {}
     while i < len(code):
         c = code[i]
         i += 1
@@ -59,6 +60,8 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
         datasize = 0
 
         opcode = c.get('name').split()[0]
+        pc2opcode[offset] = opcode
+
 
         if opcode == 'PUSHDEPLOYADDRESS':
             i += 2
@@ -83,7 +86,7 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict]:
         op_idx += 1
 
     pc2idx = {v: k for k, v in idx2pc.items()}
-    return code, pc2idx
+    return code, pc2idx, pc2opcode
 
 def source_content_by_file_key(input_json: dict, filename: str):
     '''
@@ -104,8 +107,8 @@ def source_content_by_fid(input_json: dict, output_json: dict, fid: int):
     filename = filename_by_fid(output_json, fid)
     return source_content_by_file_key(input_json, filename)
 
-def source_by_pc(input_json: dict, output_json: dict, pc: int, evm: dict, deploy=False):
-    code, pc2idx = build_pc2idx(evm, deploy)
+def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int):
+    # code, pc2idx, *_ = build_pc2idx(evm, deploy)
     code_len = len(code)
 
     block = None
@@ -177,6 +180,7 @@ def override_settings(input_json):
 
 class StandardJsonParser(BaseParser):
     def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
+        super().__init__()
         self.file_path = None
         self.solc_version: str = version
         self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
@@ -265,11 +269,22 @@ class StandardJsonParser(BaseParser):
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
-            result = source_by_pc(self.input_json, self.output_json, pc, evm, deploy)
+            code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
+            result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc)
             if result:
                 return result
         return None
 
+    def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
+        return build_pc2idx(evm, deploy)
+
+    @cache
+    def pc2opcode_by_contract(self, contract_name: str, deploy) -> Dict[int, str]:
+        evms = evms_by_contract_name(self.output_json, contract_name)
+        for _, evm in evms: # if same contract existsin in multiple files, there could be a problem
+            _, _, pc2opcode = self.__build_pc2idx(evm, deploy)
+            return pc2opcode
+        return {}
 
     def function_by_name(self, contract_name: str, function_name: str) -> Function:
         """Return a function for a given contract name and function name"""
@@ -313,7 +328,6 @@ class StandardJsonParser(BaseParser):
 
         return None
 
-    # TODO test
     def get_deploy_bin_by_hash(self, hsh: str) -> Optional[str]:
         '''Get deployment binary by hash of fully qualified contract / library name'''
         r = self.qualified_name_from_hash(hsh)
