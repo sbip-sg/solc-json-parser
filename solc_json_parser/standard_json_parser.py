@@ -275,7 +275,6 @@ class StandardJsonParser(BaseParser):
                 return result
         return None
 
-    @cache
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
         return build_pc2idx(evm, deploy)
 
