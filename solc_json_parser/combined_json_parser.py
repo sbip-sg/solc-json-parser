@@ -19,6 +19,7 @@ class CombinedJsonParser(BaseParser):
         self.file_path = None
         self.root_path = None
         self.is_standard_json = False
+        self.pc2opcode = {}
 
         if contract_source_path is not None:
             if '\n' in contract_source_path:
@@ -257,6 +258,14 @@ class CombinedJsonParser(BaseParser):
         self.__parse_asm_data(contract_name, deploy=deploy)
         return self.pc2opcode[contract_name][deploy]
 
+    # @cache
+    # def opcode2pcs_by_contract(self, contract_name: str, deploy) -> Dict[str, set[int]]:
+    #     pc2opcode = self.pc2opcode_by_contract(contract_name, deploy=deploy)
+    #     out = {}
+    #     for pc, opcode in pc2opcode.items():
+    #         out.setdefault(opcode, set()).add(pc)
+
+    #     return out
 
     @cache
     def all_jumps(self, contract_name: str, deploy) -> set[int]:
