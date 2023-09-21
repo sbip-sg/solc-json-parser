@@ -9,7 +9,7 @@ from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
 from .fields import Field, Function, ContractData, Modifier, Event, Literal
 
-def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin):
+def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str]=None):
     '''
     Compile standard input json and parse output as json.
     Parameters:
@@ -22,11 +22,13 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
     if not os.path.exists(solc):
         raise Exception(f'solc not found at: {solc}, please download all solc binaries first or provide your `solc_bin_resolver` function')
 
+
     solc_output = subprocess.check_output(
         [solc, "--standard-json",],
         input=json.dumps(input_json),
         text=True,
         stderr=subprocess.PIPE,
+        cwd=cwd
     )
     return json.loads(solc_output)
 
@@ -92,7 +94,7 @@ def source_content_by_file_key(input_json: dict, filename: str):
     '''
     Get source code content by unique filename
     '''
-    return input_json['sources'][filename]['content']
+    return s.get_in(input_json, 'sources', filename, 'content')
 
 def filename_by_fid(output_json: dict, fid: int) -> str:
     filename = ''
@@ -179,7 +181,7 @@ def override_settings(input_json):
 
 
 class StandardJsonParser(BaseParser):
-    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin):
+    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None):
         super().__init__()
         self.file_path = None
         self.solc_version: str = version
@@ -190,9 +192,9 @@ class StandardJsonParser(BaseParser):
         self.solc_json_ast: Dict[int, dict] = {}
         self.is_standard_json = True
         self.pre_configure_compatible_fields()
+        self.cwd = cwd
 
-
-        self.output_json = compile_standard(version, self.input_json, solc_bin_resolver)
+        self.output_json = compile_standard(version, self.input_json, solc_bin_resolver, cwd)
         if has_compilation_error(self.output_json):
             raise SolidityAstError(f"Compile failed: {self.output_json.get('errors')}" )
 
@@ -224,6 +226,8 @@ class StandardJsonParser(BaseParser):
     def get_line_number_range_and_source(self, slf):
         start, length, fid = slf
         content = source_content_by_fid(self.input_json, self.output_json, fid)
+        if not content:
+            return (0, 0), ""
         source_code_bytes = content.encode()
         start_line = source_code_bytes[:start].decode().count('\n') + 1
         end_line = start_line + source_code_bytes[start:start + length].decode().count('\n')

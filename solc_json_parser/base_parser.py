@@ -39,6 +39,7 @@ class BaseParser():
         self.is_standard_json = False
         self.file_path = None # to be overridden by CombinedJsonParser
         self.pc2opcode = {}
+        self.cwd = None
 
     def build(self):
         raise NotImplementedError
