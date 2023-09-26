@@ -372,8 +372,9 @@ class BaseParser():
     def base_contract_names(self) -> List[str]:
         contracts = self.all_contracts()
         base_contract_ids = set([bc for c in contracts for bc in c.base_contracts])
-        names = [self.id_to_symbols[d] for d in base_contract_ids]
-        assert len(set(names)) == len(base_contract_ids), f'Possibly different contracts with same name: {self.id_to_symbols} {base_contract_ids}, {names}'
+        names = list(filter(None, map(self.id_to_symbols.get, base_contract_ids)))
+        if len(set(names)) == len(base_contract_ids):
+            print(f'Possibly different contracts with same name, or complilation with remappings: {self.id_to_symbols} {base_contract_ids}, {names}')
         return names
 
 
