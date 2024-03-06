@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Dict
 
 name_to_byte: Dict[str, int] = dict(
     #
@@ -99,6 +99,7 @@ name_to_byte: Dict[str, int] = dict(
     #
     # Push Operations
     #
+    PUSH0 = 0x5f,
     PUSH1 = 0x60,
     PUSH2 = 0x61,
     PUSH3 = 0x62,
@@ -196,7 +197,29 @@ name_to_byte: Dict[str, int] = dict(
     CREATE2 = 0xf5,
     STATICCALL = 0xfa,
     REVERT = 0xfd,
+    INVALID = 0xfe,
     SELFDESTRUCT = 0xff,
 )
 
 byte_to_name: Dict[int, str] = {v : k for k, v in name_to_byte.items()}
+
+
+def decode_and_print(binary_hex):
+    if binary_hex[:2].lower() == '0x':
+        binary_hex = binary_hex[2:]
+    i = 0
+    while i < len(binary_hex):
+        offset = i + 2
+        opcode = int(binary_hex[i:i+2], 16)
+        opcode_name = byte_to_name.get(opcode)
+        if opcode_name is None:
+            # raise ValueError(f"Unknown opcode: {opcode:02x}, from: {opcodes[i:]}")
+            print(f"0x{opcode:02x}".upper())
+        else:
+            if opcode_name.startswith('PUSH'):
+                length = int(opcode_name[4:])
+                offset += length*2
+                print(f"{opcode_name} 0x{binary_hex[i+2:offset]}")
+            else:
+                print(opcode_name)
+        i = offset
