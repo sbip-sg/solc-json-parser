@@ -2,6 +2,13 @@
 
 Parsing AST with solidity source code and get contract information.
 
+## Installation
+
+Clone this repository and install it with pip:
+
+``` bash
+pip install .
+```
 
 ## Usage
 
@@ -49,6 +56,35 @@ parser = StandardJsonParser(input_json, version)
 
 # Other usages are the same as combined json parser
 ```
+
+## Command line tools
+
+``` bash
+solc-json-parser --help
+```
+
+Decode binary to opcodes:
+
+``` bash
+❯ solc-json-parser dp 0x60806040525f80fdfea26469706673582212200466fd4ed0d73499199c39545f7019da158defa354cc0051afe02754ec8e32b464736f6c63430008180033
+PUSH1 0x80
+PUSH1 0x40
+MSTORE
+PUSH0 0x
+DUP1
+REVERT
+INVALID
+LOG2
+PUSH5 0x6970667358
+0X22
+SLT
+SHA3
+DIV
+PUSH7 0xfd4ed0d7349919
+SWAP13
+...
+```
+
 
 
 ## Note
