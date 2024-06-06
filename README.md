@@ -2,15 +2,19 @@
 
 Parsing AST with solidity source code and get contract information.
 
-## Installation
+## Quickstart
+
+### Installation
 
 Clone this repository and install it with pip:
 
 ``` bash
+git clone https://github.com/sbip-sg/solc-json-parser.git
+cd solc-json-parser
 pip install .
 ```
 
-## Usage
+### Usage
 
 Example usage using [standard json](https://docs.soliditylang.org/en/v0.8.17/using-the-compiler.html#compiler-input-and-output-json-description):
 
