@@ -9,6 +9,15 @@ from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
 from .fields import Field, Function, ContractData, Modifier, Event, Literal
 
+def node_contains(src_str: str, pc_source: dict) -> bool:
+    """
+    Check if the source code contains the given pc_source
+    """
+    if not src_str:
+        return False
+    offset, length, _ = list(map(int, src_str.split(':')))
+    return offset <= pc_source['begin'] and offset + length >= pc_source['end']
+
 def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str]=None):
     '''
     Compile standard input json and parse output as json.
@@ -271,6 +280,12 @@ class StandardJsonParser(BaseParser):
 
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
+        """
+        Get source code by program counter(pc) in a contract.
+        - `contract_name`: contract name in string
+        - `pc`: program counter in integer
+        - `deploy`: set to True if the PC is from the deployment code instead of runtime code. Default is False
+        """
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
@@ -278,6 +293,36 @@ class StandardJsonParser(BaseParser):
             if result:
                 return result
         return None
+
+    def __extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
+        to_visit = [root_node]
+        found = []
+        while True:
+            if not to_visit:
+                break
+
+            node = to_visit.pop(0)
+            children = node.get('nodes')
+
+            if children:
+                to_visit += children
+            elif pred(node):
+                found.append(node)
+                if first_only:
+                    break
+
+        return found
+
+    def ast_units_by_pc(self, contract_name: str, pc: int, node_type: Optional[str], deploy=False, first_only=False) -> List[Dict]:
+        pc_source = self.source_by_pc(contract_name, pc, deploy)
+        if not pc_source:
+            return []
+        pred = lambda node: node and (node_type is None or node.get('nodeType') == node_type) and node_contains(node.get('src'), pc_source)
+        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'])
+
+    def function_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
+        units = self.ast_units_by_pc(contract_name, pc, 'FunctionDefinition', deploy, first_only=True)
+        return units[0] if units else None
 
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
         return build_pc2idx(evm, deploy)

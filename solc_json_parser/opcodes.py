@@ -203,7 +203,7 @@ name_to_byte: Dict[str, int] = dict(
 
 byte_to_name: Dict[int, str] = {v : k for k, v in name_to_byte.items()}
 
-
+# convert and print 0x60606040526000357c010 to human readable opcodes
 def decode_and_print(binary_hex):
     if binary_hex[:2].lower() == '0x':
         binary_hex = binary_hex[2:]
@@ -219,7 +219,14 @@ def decode_and_print(binary_hex):
             if opcode_name.startswith('PUSH'):
                 length = int(opcode_name[4:])
                 offset += length*2
-                print(f"{opcode_name} 0x{binary_hex[i+2:offset]}")
+                if length > 0:
+                    print(f"{opcode_name} 0x{binary_hex[i+2:offset]}")
+                else:
+                    print(opcode_name)
             else:
                 print(opcode_name)
         i = offset
+
+# convert opcodes to binary hex and print
+def encode_and_print(opcodes):
+    pass
