@@ -52,7 +52,7 @@ func = parser.function_unit_by_pc('DirectLoanFixedOffer', 13232)
 # Function selector, available only for external or public functions
 func.get('functionSelector')
 
-# Get AST unit by PC
+# Get the innermost AST unit by PC
 parser.ast_unit_by_pc('DirectLoanFixedOffer', 13232)
 ```
 

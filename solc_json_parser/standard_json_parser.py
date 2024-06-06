@@ -190,11 +190,22 @@ def override_settings(input_json):
 
 
 class StandardJsonParser(BaseParser):
-    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None):
+    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None,
+                 retry_num: Optional[int]=0,
+                 try_install_solc: Optional[bool]=False,
+                 solc_options: Optional[Dict] = {}):
+        if retry_num is not None and retry_num > 0:
+            raise Exception('StandardJsonParser does not support retry')
+
         super().__init__()
         self.file_path = None
         self.solc_version: str = version
-        self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+        try:
+            # try parse as json
+            self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+        except json.JSONDecodeError:
+            # try use input as a plain source file
+            self.input_json = StandardJsonParser.__prepare_standard_input(input_json)
 
         self.input_json = override_settings(self.input_json)
 
@@ -204,10 +215,39 @@ class StandardJsonParser(BaseParser):
         self.cwd = cwd
 
         self.output_json = compile_standard(version, self.input_json, solc_bin_resolver, cwd)
+
         if has_compilation_error(self.output_json):
             raise SolidityAstError(f"Compile failed: {self.output_json.get('errors')}" )
 
         self.post_configure_compatible_fields()
+
+    @staticmethod
+    def __prepare_standard_input(source: str) -> Dict:
+        if '\n' not in source:
+            with open(source, 'r') as f:
+                source = f.read()
+
+        input_json = {
+            'language': 'Solidity',
+            'sources': {
+                'source.sol': {
+                    'content': source
+                }
+            },
+            'settings': {
+                'optimizer': {
+                    'enabled': False,
+                },
+                'evmVersion': 'istanbul',
+                'outputSelection': {
+                    '*': {
+                        '*': [ '*' ],
+                        '': ['ast']
+                    }
+                }
+            }
+        }
+        return input_json
 
 
     def prepare_by_version(self):
