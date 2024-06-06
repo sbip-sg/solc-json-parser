@@ -52,6 +52,17 @@ class TestStandardJsonParser(unittest.TestCase):
 
             self.assertEqual(e, expected)
 
+    def test_function_unit_by_pc(self):
+        expected_data = [
+            {'pc': 427, 'function': 'withdraw', 'selector': '3ccfd60b'},
+        ]
+
+        for expected in expected_data:
+            pc = expected['pc']
+            actual = self.parser.function_unit_by_pc(self.main_contract, pc, False)
+
+            self.assertEqual(expected['function'], actual['name'])
+            self.assertEqual(expected['selector'], actual['functionSelector'])
 
     def test_all_contract_name(self):
         expected_contract_names = {'A', 'B', 'Main'}

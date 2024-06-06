@@ -2,41 +2,21 @@
 
 Parsing AST with solidity source code and get contract information.
 
+## Quickstart
 
-## Usage
+### Installation
 
-Using combined json, support for contract with multiple source files is limited:
+Clone this repository and install it with pip:
 
-``` python
-from solc_json_parser.combined_json_parser import CombinedJsonParser
-
-# The input can be a file path or source code
-parser = CombinedJsonParser('contracts/BlackScholesEstimate_8.sol')
-parser.all_contract_names
-
-# List all functions in contract
-parser.functions_in_contract_by_name('BlackScholesEstimate', name_only=True)
-
-# Get source code by program counter
-parser.source_by_pc('BlackScholesEstimate', 92)
-{'pc': 92,
- 'fragment': 'function retBasedBlackScholesEstimate(\n        uint256[] memory _numbers,\n        uint256 _underlying,\n        uint256 _time\n    ) public pure {\n        uint _vol = stddev(_numbers);\n        blackScholesEstimate(_vol, _underlying, _time);\n    }',
- 'begin': 2633,
- 'end': 2877,
- 'linenums': (69, 76),
- 'source_idx': 0,
- 'source_path': 'BlackScholesEstimate_8.sol'}
-
-
-# Get deployment code by contract name
-parser.get_deploy_bin_by_contract_name('BlackScholesEstimate')
-
-# Get literal values by contract name
-parser.get_literals('BlackScholesEstimate', True)
-{'number': {0, 1, 2, 40}, 'string': set(), 'address': set(), 'other': set()}
+``` bash
+git clone https://github.com/sbip-sg/solc-json-parser.git
+cd solc-json-parser
+pip install .
 ```
 
-Using [standard json](https://docs.soliditylang.org/en/v0.8.17/using-the-compiler.html#compiler-input-and-output-json-description):
+### Usage
+
+Example usage using [standard json](https://docs.soliditylang.org/en/v0.8.17/using-the-compiler.html#compiler-input-and-output-json-description):
 
 ``` python
 import json
@@ -47,8 +27,67 @@ with open('contracts/standard_json/75b8.standard-input.json') as f:
 version = '0.8.4'
 parser = StandardJsonParser(input_json, version)
 
-# Other usages are the same as combined json parser
+# Get all contract names
+parser.all_contract_names
+# ['IERC1271',
+#  ...
+#  'ContractKeys',
+#  'NFTfiSigningUtils',
+#  'NftReceiver',
+#  'Ownable']
+
+# Get source code by PC
+source = parser.source_by_pc('DirectLoanFixedOffer', 13232)
+source
+# {'pc': 13232,
+#  'linenums': [921, 924],
+#  'fragment': 'LoanChecksAndCalculations.computeRevenueShare(\n            adminFee,\n            loanExtras.revenueShareInBasisPoints\n        )',
+#  'fid': 'contracts/loans/direct/loanTypes/DirectLoanBaseMinimal.sol',
+#  'begin': 45007,
+#  'end': 45134,
+#  'source_idx': 26,
+#  'source_path': 'contracts/loans/direct/loanTypes/DirectLoanBaseMinimal.sol'}
+
+# Get function AST unit by PC
+func = parser.function_unit_by_pc('DirectLoanFixedOffer', 13232)
+# Parameter names of this function
+[n.get('name') for n in func.get('parameters').get('parameters')]
+# ['_loanId', '_borrower', '_lender', '_loan']
+# Function selector, available only for external or public functions
+func.get('functionSelector')
+
+# Get the innermost AST unit by PC
+parser.ast_unit_by_pc('DirectLoanFixedOffer', 13232)
 ```
+
+## Command line tools
+
+``` bash
+solc-json-parser --help
+```
+
+Decode binary to opcodes:
+
+``` bash
+❯ solc-json-parser dp 0x60806040525f80fdfea26469706673582212200466fd4ed0d73499199c39545f7019da158defa354cc0051afe02754ec8e32b464736f6c63430008180033
+PUSH1 0x80
+PUSH1 0x40
+MSTORE
+PUSH0 0x
+DUP1
+REVERT
+INVALID
+LOG2
+PUSH5 0x6970667358
+0X22
+SLT
+SHA3
+DIV
+PUSH7 0xfd4ed0d7349919
+SWAP13
+...
+```
+
 
 
 ## Note

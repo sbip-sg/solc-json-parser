@@ -9,6 +9,15 @@ from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
 from .fields import Field, Function, ContractData, Modifier, Event, Literal
 
+def node_contains(src_str: str, pc_source: dict) -> bool:
+    """
+    Check if the source code contains the given pc_source
+    """
+    if not src_str:
+        return False
+    offset, length, _fidx = list(map(int, src_str.split(':')))
+    return offset <= pc_source['begin'] and offset + length >= pc_source['end']
+
 def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str]=None):
     '''
     Compile standard input json and parse output as json.
@@ -181,11 +190,22 @@ def override_settings(input_json):
 
 
 class StandardJsonParser(BaseParser):
-    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None):
+    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None,
+                 retry_num: Optional[int]=0,
+                 try_install_solc: Optional[bool]=False,
+                 solc_options: Optional[Dict] = {}):
+        if retry_num is not None and retry_num > 0:
+            raise Exception('StandardJsonParser does not support retry')
+
         super().__init__()
         self.file_path = None
         self.solc_version: str = version
-        self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+        try:
+            # try parse as json
+            self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
+        except json.JSONDecodeError:
+            # try use input as a plain source file
+            self.input_json = StandardJsonParser.__prepare_standard_input(input_json)
 
         self.input_json = override_settings(self.input_json)
 
@@ -195,10 +215,39 @@ class StandardJsonParser(BaseParser):
         self.cwd = cwd
 
         self.output_json = compile_standard(version, self.input_json, solc_bin_resolver, cwd)
+
         if has_compilation_error(self.output_json):
             raise SolidityAstError(f"Compile failed: {self.output_json.get('errors')}" )
 
         self.post_configure_compatible_fields()
+
+    @staticmethod
+    def __prepare_standard_input(source: str) -> Dict:
+        if '\n' not in source:
+            with open(source, 'r') as f:
+                source = f.read()
+
+        input_json = {
+            'language': 'Solidity',
+            'sources': {
+                'source.sol': {
+                    'content': source
+                }
+            },
+            'settings': {
+                'optimizer': {
+                    'enabled': False,
+                },
+                'evmVersion': 'istanbul',
+                'outputSelection': {
+                    '*': {
+                        '*': [ '*' ],
+                        '': ['ast']
+                    }
+                }
+            }
+        }
+        return input_json
 
 
     def prepare_by_version(self):
@@ -271,6 +320,12 @@ class StandardJsonParser(BaseParser):
 
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
+        """
+        Get source code by program counter(pc) in a contract.
+        - `contract_name`: contract name in string
+        - `pc`: program counter in integer
+        - `deploy`: set to True if the PC is from the deployment code instead of runtime code. Default is False
+        """
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
@@ -278,6 +333,58 @@ class StandardJsonParser(BaseParser):
             if result:
                 return result
         return None
+
+    def __extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
+        to_visit = [root_node]
+        found = []
+        while True:
+            if not to_visit:
+                break
+
+            node = to_visit.pop(0)
+
+            if type(node) not in {dict, list}:
+                continue
+
+            if type(node) == list:
+                to_visit += node
+                continue
+
+            children = list(node.values())
+
+            if children:
+                to_visit += children
+            if pred(node):
+                found.append(node)
+                if first_only:
+                    break
+
+        return found
+
+    def ast_units_by_pc(self, contract_name: str, pc: int, node_type: Optional[str], deploy=False, first_only=False) -> List[Dict]:
+        """
+        Get all AST units by PC
+        """
+        pc_source = self.source_by_pc(contract_name, pc, deploy)
+        if not pc_source:
+            return []
+        pred = lambda node: node and (node_type is None or node.get('nodeType') == node_type) and node_contains(node.get('src'), pc_source)
+        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
+
+    def function_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
+        """
+        Get the function AST unit containing the PC
+        """
+        units = self.ast_units_by_pc(contract_name, pc, 'FunctionDefinition', deploy, first_only=True)
+        return units[0] if units else None
+
+    def ast_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
+        """
+        Get the smallest AST unit containing the PC
+        """
+        units = self.ast_units_by_pc(contract_name, pc, node_type=None, deploy=deploy, first_only=False)
+        return units[-1] if units else None
+
 
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
         return build_pc2idx(evm, deploy)
