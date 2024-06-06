@@ -171,7 +171,7 @@ class BaseParser():
                         modifiers=modifiers, line_num=line_number_range, state_mutability=state_mutability,
                         source_id=node.get("source_id"))
 
-    def get_yul_lines(self, contract_name: str, deploy: bool) -> List[str]:
+    def get_yul_lines(self, contract_name: str, deploy: Optional[bool]=False) -> List[str]:
         if not self.v8:
             return []
 
@@ -373,7 +373,7 @@ class BaseParser():
         contracts = self.all_contracts()
         base_contract_ids = set([bc for c in contracts for bc in c.base_contracts])
         names = list(filter(None, map(self.id_to_symbols.get, base_contract_ids)))
-        if len(set(names)) == len(base_contract_ids):
+        if len(set(names)) != len(base_contract_ids):
             print(f'Possibly different contracts with same name, or complilation with remappings: {self.id_to_symbols} {base_contract_ids}, {names}')
         return names
 

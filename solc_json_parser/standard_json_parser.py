@@ -7,7 +7,8 @@ from .version_cfg import v_keys
 from . import ast_shared as s
 from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
-from .fields import Field, Function, ContractData, Modifier, Event, Literal
+from .fields import Function
+import sys
 
 def node_contains(src_str: str, pc_source: dict) -> bool:
     """
@@ -196,6 +197,12 @@ class StandardJsonParser(BaseParser):
                  solc_options: Optional[Dict] = {}):
         if retry_num is not None and retry_num > 0:
             raise Exception('StandardJsonParser does not support retry')
+
+        if try_install_solc:
+            print('StandardJsonParser does not support try_install_solc, option will be ignored', file=sys.stderr)
+
+        if solc_options:
+            print('StandardJsonParser does not support solc_options, please set extra parameters to input_json instead', file=sys.stderr)
 
         super().__init__()
         self.file_path = None
