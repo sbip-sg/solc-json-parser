@@ -15,7 +15,7 @@ def node_contains(src_str: str, pc_source: dict) -> bool:
     """
     if not src_str:
         return False
-    offset, length, _ = list(map(int, src_str.split(':')))
+    offset, length, _fidx = list(map(int, src_str.split(':')))
     return offset <= pc_source['begin'] and offset + length >= pc_source['end']
 
 def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str]=None):
@@ -302,11 +302,19 @@ class StandardJsonParser(BaseParser):
                 break
 
             node = to_visit.pop(0)
-            children = node.get('nodes')
+
+            if type(node) not in {dict, list}:
+                continue
+
+            if type(node) == list:
+                to_visit += node
+                continue
+
+            children = list(node.values())
 
             if children:
                 to_visit += children
-            elif pred(node):
+            if pred(node):
                 found.append(node)
                 if first_only:
                     break
@@ -314,15 +322,29 @@ class StandardJsonParser(BaseParser):
         return found
 
     def ast_units_by_pc(self, contract_name: str, pc: int, node_type: Optional[str], deploy=False, first_only=False) -> List[Dict]:
+        """
+        Get all AST units by PC
+        """
         pc_source = self.source_by_pc(contract_name, pc, deploy)
         if not pc_source:
             return []
         pred = lambda node: node and (node_type is None or node.get('nodeType') == node_type) and node_contains(node.get('src'), pc_source)
-        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'])
+        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
 
     def function_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
+        """
+        Get the function AST unit containing the PC
+        """
         units = self.ast_units_by_pc(contract_name, pc, 'FunctionDefinition', deploy, first_only=True)
         return units[0] if units else None
+
+    def ast_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
+        """
+        Get the smallest AST unit containing the PC
+        """
+        units = self.ast_units_by_pc(contract_name, pc, node_type=None, deploy=deploy, first_only=False)
+        return units[-1] if units else None
+
 
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
         return build_pc2idx(evm, deploy)

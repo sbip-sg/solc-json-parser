@@ -46,10 +46,14 @@ source
 
 # Get function AST unit by PC
 func = parser.function_unit_by_pc('DirectLoanFixedOffer', 13232)
+# Parameter names of this function
 [n.get('name') for n in func.get('parameters').get('parameters')]
 # ['_loanId', '_borrower', '_lender', '_loan']
-
+# Function selector, available only for external or public functions
 func.get('functionSelector')
+
+# Get AST unit by PC
+parser.ast_unit_by_pc('DirectLoanFixedOffer', 13232)
 ```
 
 ## Command line tools
