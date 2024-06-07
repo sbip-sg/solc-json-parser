@@ -43,7 +43,6 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
     )
     return json.loads(solc_output)
 
-
 def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
     '''
     Build pc2idx map from one evm dictionary. If deploy is True, build it using deployment code.
@@ -339,7 +338,7 @@ class StandardJsonParser(BaseParser):
         end = block.get('end')
         pred = lambda node: node and node.get('language') == 'Yul' and node.get('id') == fid
         # this does not consider deployment code or not, might be a bug
-        yul_source = self.__extract_node(pred, self.output_json['contracts'], first_only=True)[0]
+        yul_source = self.extract_node(pred, self.output_json['contracts'], first_only=True)[0]
 
         if not yul_source:
             return None
@@ -367,7 +366,7 @@ class StandardJsonParser(BaseParser):
                 return result
         return None
 
-    def __extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
+    def extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
         to_visit = [root_node]
         found = []
         while True:
@@ -402,7 +401,7 @@ class StandardJsonParser(BaseParser):
         if not pc_source:
             return []
         pred = lambda node: node and (node_type is None or node.get('nodeType') == node_type) and node_contains(node.get('src'), pc_source)
-        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
+        return self.extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
 
     def function_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
         """
@@ -419,11 +418,20 @@ class StandardJsonParser(BaseParser):
         return units[-1] if units else None
 
 
+    def all_pcs(self, contract: str, deploy: Optional[bool] = False) -> List[int]:
+        """
+        Returns a list of PCs inside the contract
+        """
+        return list(self.pc2opcode_by_contract(contract, deploy).keys())
+
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
+        """
+        Returns a tuple: (code, pc2idx, pc2opcode)
+        """
         return build_pc2idx(evm, deploy)
 
     @cache
-    def pc2opcode_by_contract(self, contract_name: str, deploy) -> Dict[int, str]:
+    def pc2opcode_by_contract(self, contract_name: str, deploy: bool) -> Dict[int, str]:
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms: # if same contract existsin in multiple files, there could be a problem
             _, _, pc2opcode = self.__build_pc2idx(evm, deploy)
@@ -515,7 +523,7 @@ class StandardJsonParser(BaseParser):
         - May return unexpected result when the contract appears in multiple source files.
         """
         pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
-        contract = self.__extract_node(pred, self.output_json['sources'], first_only=True)[0]
+        contract = self.extract_node(pred, self.output_json['sources'], first_only=True)[0]
         return contract['source_id']
 
     def all_source_path_by_contract(self, contract_name: str) -> Optional[List[str]]:
@@ -523,7 +531,7 @@ class StandardJsonParser(BaseParser):
         Get source path by contract name.
         """
         pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
-        contracts = self.__extract_node(pred, self.output_json['sources'], first_only=False)
+        contracts = self.extract_node(pred, self.output_json['sources'], first_only=False)
         return [c['source_id'] for c in contracts] if contracts else []
 
     def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
