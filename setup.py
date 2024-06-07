@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup(
     name='solc-json-parser',
     packages=find_packages(include=['solc_json_parser']),
-    version='0.1.8',
+    version='0.1.9',
     description='AST parser from solc json file',
     long_description=long_description,
     long_description_content_type="text/markdown",
