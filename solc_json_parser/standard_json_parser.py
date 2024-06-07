@@ -27,6 +27,7 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
         input_json: standard json input
         solc_bin_resolver: a function takes a solc version string and returns a full path to solc executable
     '''
+    print(f'Compiling with solc version: {version}')
     solc = solc_bin_resolver(version)
 
     if not os.path.exists(solc):
@@ -119,7 +120,7 @@ def source_content_by_fid(input_json: dict, output_json: dict, fid: int):
     filename = filename_by_fid(output_json, fid)
     return source_content_by_file_key(input_json, filename)
 
-def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int):
+def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int, resolve_yul_block: Optional[Callable]=None):
     # code, pc2idx, *_ = build_pc2idx(evm, deploy)
     code_len = len(code)
 
@@ -146,7 +147,11 @@ def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int):
             file_key = k
             break
 
-    if not file_key:
+    if not file_key and resolve_yul_block is not None:
+        r = resolve_yul_block(block)
+        if r:
+            r['pc'] = pc
+            return r
         return None
 
     content = source_content_by_file_key(input_json, file_key)
@@ -325,6 +330,27 @@ class StandardJsonParser(BaseParser):
         self.solc_json_ast = self.__build_ast()
         self.contracts_dict = self._parse()
 
+    def source_by_yul_block(self, block: Dict):
+        """
+        Get source code by Yul block
+        """
+        fid = block.get('source')
+        begin = block.get('begin')
+        end = block.get('end')
+        pred = lambda node: node and node.get('language') == 'Yul' and node.get('id') == fid
+        # this does not consider deployment code or not, might be a bug
+        yul_source = self.__extract_node(pred, self.output_json['contracts'], first_only=True)[0]
+
+        if not yul_source:
+            return None
+
+        source_as_bytes = yul_source['contents'].encode()
+        fragment = source_as_bytes[begin:end].decode()
+        linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
+                    source_as_bytes[:end].decode().count('\n') + 1)
+
+        return dict(fragment=fragment, begin=begin, end=end, linenums=linenums, fid=fid, source_path=yul_source['name'])
+
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
         """
@@ -336,7 +362,7 @@ class StandardJsonParser(BaseParser):
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
-            result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc)
+            result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc, resolve_yul_block=self.source_by_yul_block)
             if result:
                 return result
         return None
