@@ -107,7 +107,7 @@ def source_content_by_file_key(input_json: dict, filename: str):
     return s.get_in(input_json, 'sources', filename, 'content')
 
 def filename_by_fid(output_json: dict, fid: int) -> str:
-    filename = ''
+
     for k, source in output_json['sources'].items():
         if fid == source['id']:
             filename = k
@@ -480,3 +480,20 @@ class StandardJsonParser(BaseParser):
         literals = s.process_literal_node(literals_nodes, only_value)
 
         return literals
+
+    def source_path_by_contract(self, contract_name: str) -> str:
+        """
+        Get source path by contract name. Note: May throw exception. May return unexpected result when the contract appears in multiple source files.
+        """
+        pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
+        contract = self.__extract_node(pred, self.output_json['sources'], first_only=True)[0]
+        return contract['source_id']
+
+    def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
+        """
+        Get source code by contract name and line numbers, line numbers are zero indexed
+        """
+        source_path = self.source_path_by_contract(contract_name)
+        content = self.input_json['sources'][source_path]['content']
+        lines = content.split('\n')[line_start:line_end]
+        return '\n'.join(lines)
