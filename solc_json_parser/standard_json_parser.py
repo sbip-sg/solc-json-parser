@@ -7,7 +7,8 @@ from .version_cfg import v_keys
 from . import ast_shared as s
 from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
-from .fields import Field, Function, ContractData, Modifier, Event, Literal
+from .fields import Function
+import sys
 
 def node_contains(src_str: str, pc_source: dict) -> bool:
     """
@@ -26,6 +27,7 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
         input_json: standard json input
         solc_bin_resolver: a function takes a solc version string and returns a full path to solc executable
     '''
+    print(f'Compiling with solc version: {version}')
     solc = solc_bin_resolver(version)
 
     if not os.path.exists(solc):
@@ -40,7 +42,6 @@ def compile_standard(version: str, input_json: dict, solc_bin_resolver: Callable
         cwd=cwd
     )
     return json.loads(solc_output)
-
 
 def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
     '''
@@ -106,7 +107,7 @@ def source_content_by_file_key(input_json: dict, filename: str):
     return s.get_in(input_json, 'sources', filename, 'content')
 
 def filename_by_fid(output_json: dict, fid: int) -> str:
-    filename = ''
+
     for k, source in output_json['sources'].items():
         if fid == source['id']:
             filename = k
@@ -118,7 +119,7 @@ def source_content_by_fid(input_json: dict, output_json: dict, fid: int):
     filename = filename_by_fid(output_json, fid)
     return source_content_by_file_key(input_json, filename)
 
-def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int):
+def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int, resolve_yul_block: Optional[Callable]=None):
     # code, pc2idx, *_ = build_pc2idx(evm, deploy)
     code_len = len(code)
 
@@ -145,7 +146,11 @@ def source_by_pc(code, pc2idx, input_json: dict, output_json: dict, pc: int):
             file_key = k
             break
 
-    if not file_key:
+    if not file_key and resolve_yul_block is not None:
+        r = resolve_yul_block(block)
+        if r:
+            r['pc'] = pc
+            return r
         return None
 
     content = source_content_by_file_key(input_json, file_key)
@@ -196,6 +201,12 @@ class StandardJsonParser(BaseParser):
                  solc_options: Optional[Dict] = {}):
         if retry_num is not None and retry_num > 0:
             raise Exception('StandardJsonParser does not support retry')
+
+        if try_install_solc:
+            print('StandardJsonParser does not support try_install_solc, option will be ignored', file=sys.stderr)
+
+        if solc_options:
+            print('StandardJsonParser does not support solc_options, please set extra parameters to input_json instead', file=sys.stderr)
 
         super().__init__()
         self.file_path = None
@@ -318,6 +329,27 @@ class StandardJsonParser(BaseParser):
         self.solc_json_ast = self.__build_ast()
         self.contracts_dict = self._parse()
 
+    def source_by_yul_block(self, block: Dict):
+        """
+        Get source code by Yul block
+        """
+        fid = block.get('source')
+        begin = block.get('begin')
+        end = block.get('end')
+        pred = lambda node: node and node.get('language') == 'Yul' and node.get('id') == fid
+        # this does not consider deployment code or not, might be a bug
+        yul_source = self.extract_node(pred, self.output_json['contracts'], first_only=True)[0]
+
+        if not yul_source:
+            return None
+
+        source_as_bytes = yul_source['contents'].encode()
+        fragment = source_as_bytes[begin:end].decode()
+        linenums = (source_as_bytes[:begin].decode().count('\n') + 1,
+                    source_as_bytes[:end].decode().count('\n') + 1)
+
+        return dict(fragment=fragment, begin=begin, end=end, linenums=linenums, fid=fid, source_path=yul_source['name'])
+
 
     def source_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[dict]:
         """
@@ -329,12 +361,12 @@ class StandardJsonParser(BaseParser):
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
-            result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc)
+            result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc, resolve_yul_block=self.source_by_yul_block)
             if result:
                 return result
         return None
 
-    def __extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
+    def extract_node(self, pred: Callable, root_node: List[Dict], first_only=True) -> List[Dict]:
         to_visit = [root_node]
         found = []
         while True:
@@ -369,7 +401,7 @@ class StandardJsonParser(BaseParser):
         if not pc_source:
             return []
         pred = lambda node: node and (node_type is None or node.get('nodeType') == node_type) and node_contains(node.get('src'), pc_source)
-        return self.__extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
+        return self.extract_node(pred, self.output_json['sources'][pc_source['fid']]['ast'], first_only=first_only)
 
     def function_unit_by_pc(self, contract_name: str, pc: int, deploy=False) -> Optional[Dict]:
         """
@@ -386,11 +418,20 @@ class StandardJsonParser(BaseParser):
         return units[-1] if units else None
 
 
+    def all_pcs(self, contract: str, deploy: Optional[bool] = False) -> List[int]:
+        """
+        Returns a list of PCs inside the contract
+        """
+        return list(self.pc2opcode_by_contract(contract, deploy).keys())
+
     def __build_pc2idx(self, evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
+        """
+        Returns a tuple: (code, pc2idx, pc2opcode)
+        """
         return build_pc2idx(evm, deploy)
 
     @cache
-    def pc2opcode_by_contract(self, contract_name: str, deploy) -> Dict[int, str]:
+    def pc2opcode_by_contract(self, contract_name: str, deploy: bool) -> Dict[int, str]:
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms: # if same contract existsin in multiple files, there could be a problem
             _, _, pc2opcode = self.__build_pc2idx(evm, deploy)
@@ -473,3 +514,31 @@ class StandardJsonParser(BaseParser):
         literals = s.process_literal_node(literals_nodes, only_value)
 
         return literals
+
+    def source_path_by_contract(self, contract_name: str) -> str:
+        """
+        Get source path by contract name.
+        Note:
+        - May throw exception if no source file contains the contract.
+        - May return unexpected result when the contract appears in multiple source files.
+        """
+        pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
+        contract = self.extract_node(pred, self.output_json['sources'], first_only=True)[0]
+        return contract['source_id']
+
+    def all_source_path_by_contract(self, contract_name: str) -> Optional[List[str]]:
+        """
+        Get source path by contract name.
+        """
+        pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
+        contracts = self.extract_node(pred, self.output_json['sources'], first_only=False)
+        return [c['source_id'] for c in contracts] if contracts else []
+
+    def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
+        """
+        Get source code by contract name and line numbers, line numbers are zero indexed
+        """
+        source_path = self.source_path_by_contract(contract_name)
+        content = self.input_json['sources'][source_path]['content']
+        lines = content.split('\n')[line_start:line_end]
+        return '\n'.join(lines)
