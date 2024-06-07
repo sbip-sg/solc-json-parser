@@ -483,11 +483,22 @@ class StandardJsonParser(BaseParser):
 
     def source_path_by_contract(self, contract_name: str) -> str:
         """
-        Get source path by contract name. Note: May throw exception. May return unexpected result when the contract appears in multiple source files.
+        Get source path by contract name.
+        Note:
+        - May throw exception if no source file contains the contract.
+        - May return unexpected result when the contract appears in multiple source files.
         """
         pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
         contract = self.__extract_node(pred, self.output_json['sources'], first_only=True)[0]
         return contract['source_id']
+
+    def all_source_path_by_contract(self, contract_name: str) -> Optional[List[str]]:
+        """
+        Get source path by contract name.
+        """
+        pred = lambda node: node and node.get('nodeType') == 'ContractDefinition' and node.get('name') == contract_name
+        contracts = self.__extract_node(pred, self.output_json['sources'], first_only=False)
+        return [c['source_id'] for c in contracts] if contracts else []
 
     def source_by_lines(self, contract_name: str, line_start: int, line_end: int) -> str:
         """
