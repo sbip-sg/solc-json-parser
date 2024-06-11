@@ -249,7 +249,7 @@ class StandardJsonParser(BaseParser):
                 'optimizer': {
                     'enabled': False,
                 },
-                'evmVersion': 'istanbul',
+                # 'evmVersion': 'istanbul',
                 'outputSelection': {
                     '*': {
                         '*': [ '*' ],
@@ -542,3 +542,50 @@ class StandardJsonParser(BaseParser):
         content = self.input_json['sources'][source_path]['content']
         lines = content.split('\n')[line_start:line_end]
         return '\n'.join(lines)
+
+
+    def all_available_modifiers_by_contract_name(self) -> Dict[str, list]:
+        """Return all available modifiers by contract name."""
+        all_modifiers = {}
+        for contract in self.all_contracts():
+            if not contract.modifiers:
+                continue
+            contract_name = contract.name
+            all_modifiers[contract_name] = [m.name for m in contract.modifiers]
+        return all_modifiers
+
+    def source_by_fid(self, fid: int) -> Tuple[Optional[str], Optional[str]]:
+        """Get source code by file id. Returns error message and source code."""
+        pred = lambda node: node and node.get('id') == fid
+        source =  self.extract_node(pred, self.output_json, first_only=True)
+
+        if not source:
+            return 'no source found', None
+        source = source[0]
+
+        file_key = None
+        for k, source in self.output_json['sources'].items():
+            if fid == source['id']:
+                file_key = k
+                break
+
+        if not file_key:
+            return 'no file_key', None
+        return None, self.input_json['sources'][file_key]['content']
+
+
+
+    def source_by_pred(self, pred: Callable) -> Tuple[Optional[str], Optional[str]]:
+        """Get source code by unit name. Returns error message and source code."""
+        unit = self.extract_node(pred, self.output_json, first_only=True)
+        if not unit:
+            return 'no unit found', None
+
+        unit = unit[0]
+        (start, size, fid) = [int(i) for i in unit['src'].split(':')]
+
+        err, content = self.source_by_fid(fid)
+        if err:
+            return err, None
+        content =  content.encode()
+        return None, content[start:start+size].decode()
