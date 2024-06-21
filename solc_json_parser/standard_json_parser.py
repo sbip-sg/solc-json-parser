@@ -3,6 +3,8 @@ import json
 import os
 from typing import Tuple, Callable, List, Union, Optional, Dict
 from functools import cached_property, cache
+
+from semantic_version import Version
 from .version_cfg import v_keys
 from . import ast_shared as s
 from .ast_shared import SolidityAstError, solc_bin
@@ -187,9 +189,13 @@ def override_settings(input_json):
     Override settings:
     - Disable optimization which could confuse source mapping
     - Mark all fields to be generated in the outputs for analysis
+
+    https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description
     """
     s.assoc_in(input_json, ['settings', 'optimizer', 'enabled'], False)
     s.assoc_in(input_json, ['settings', 'outputSelection'], {'*': {'*': [ '*' ], '': ['ast']}})
+    s.assoc_in(input_json, ['settings', 'metadata'], {'bytecodeHash': 'none'}) # equiv. of solc --metadata=none
+
     input_json['language']= input_json.get('language', 'Solidity')
     return input_json
 
@@ -218,7 +224,11 @@ class StandardJsonParser(BaseParser):
             # try use input as a plain source file
             self.input_json = StandardJsonParser.__prepare_standard_input(input_json)
 
+
         self.input_json = override_settings(self.input_json)
+        support_cbor =  Version(version) >= Version('0.8.8')
+        if support_cbor:
+            s.assoc_in(self.input_json, ['settings', 'metadata', 'appendCBOR'], False)
 
         self.solc_json_ast: Dict[int, dict] = {}
         self.is_standard_json = True
