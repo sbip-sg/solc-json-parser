@@ -226,7 +226,8 @@ class StandardJsonParser(BaseParser):
 
 
         self.input_json = override_settings(self.input_json)
-        support_cbor =  Version(version) >= Version('0.8.8')
+        # https://soliditylang.org/blog/2023/02/01/solidity-0.8.18-release-announcement
+        support_cbor =  Version(version) >= Version('0.8.18')
         if support_cbor:
             s.assoc_in(self.input_json, ['settings', 'metadata', 'appendCBOR'], False)
 
