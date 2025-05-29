@@ -86,7 +86,7 @@ class BaseParser():
         line_number_range_raw = list(map(int, node.get('src').split(':')))
         start, offset, source_file_idx = line_number_range_raw
         line_number_range, source = self.get_line_number_range_and_source(line_number_range_raw)
-        raw = source.encode()[start: start+offset].decode('utf-8', errors='ignore')
+        raw = source.encode()[start: start+offset].decode()
         return raw, line_number_range
 
     def get_signature(self, function_name, parameters, kind='function') -> str:
