@@ -221,10 +221,11 @@ class CombinedJsonParser(BaseParser):
         start_index, offset, source_file_idx = line_number_range_raw
         source_list = self.get_source_list()
         source_path = self.__source_path_from_source_list(source_list, source_file_idx)
-        source_code_bytes = self.__source_code_from_source_path(source_path).encode()
+        raw_source_code = self.__source_code_from_source_path(source_path)
+        source_code_bytes = raw_source_code.encode()
         start_line = source_code_bytes[:start_index].decode().count('\n') + 1
         end_line = start_line + source_code_bytes[start_index:start_index + offset].decode('utf-8', errors='ignore').count('\n')
-        return (start_line, end_line), source_code_bytes.decode()
+        return (start_line, end_line), raw_source_code
 
     def source_path_by_contract(self, contract_name) -> Optional[str]:
         path = None
