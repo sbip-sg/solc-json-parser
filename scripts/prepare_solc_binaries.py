@@ -5,6 +5,7 @@ import requests
 import os
 import stat
 import requests
+from multiprocessing import Pool
 
 list_json_url = "https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/linux-amd64/list.json"
 
@@ -35,14 +36,16 @@ os.makedirs(folder, exist_ok=True)
 resp = requests.get(list_json_url)
 data = resp.json()
 
-for build in data['builds']:
+builds = data['builds']
+
+def maybe_download_build(build):
     version = build['version']
     path = build['path']
     download_url = base_url.format(path)
     solc_bin = os.path.join(folder, f"solc-v{version}")
     if os.path.exists(solc_bin):
         make_executable(solc_bin)
-        continue
+        return
 
     response = requests.get(download_url)
     if response.status_code == 200:
@@ -52,3 +55,13 @@ for build in data['builds']:
         print(f"Downloaded and saved {path} as v{version}")
     else:
         print(f"Error downloading {path} from {download_url}")
+
+
+def main():
+    with Pool() as pool:
+        pool.map(maybe_download_build, builds)
+
+
+if __name__ == "__main__":
+    main()
+    print("All solc binaries are downloaded and made executable.")
