@@ -469,6 +469,28 @@ class StandardJsonParser(BaseParser):
                 bins.append((filename, contract_name, bin))
         return bins
 
+    def __get_abi(self, contract_name: str, filename: Optional[str]) -> List[Tuple[str, str, list]]:
+        """
+        Returns a list of tuples, each tuple is: `(filename, contract_name, abi_dict)`
+        """
+        result = []
+        for _filename, v in self.output_json['contracts'].items():
+            if filename and _filename != filename:
+                continue
+            for name, c in v.items():
+                abi = c.get('abi')
+                if name == contract_name and abi:
+                    result.append((filename, contract_name , abi))
+        return result
+
+
+    def get_abi(self, contract_name: str) -> List[Tuple[str, str, list]]:
+        """
+        Returns a list of tuples, each tuple is: `(filename, contract_name, abi_dict)`
+        """
+        return self.__get_abi(contract_name, None)
+
+
     def get_runtime_binary(self, contract_name: str) -> List[Tuple[str, str, str]]:
         """
         Returns a list of tuples, each tuple is: `(filename, contract_name, binary)`

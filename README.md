@@ -25,7 +25,7 @@ with open('contracts/standard_json/75b8.standard-input.json') as f:
     input_json = json.load(f)
 
 version = '0.8.4'
-parser = StandardJsonParser(input_json, version)
+parser = StandardJsonParser(input_json, version) # The first argument can be either a dict (a standard json) or a string (soldity source code)
 
 # Get all contract names
 parser.all_contract_names
