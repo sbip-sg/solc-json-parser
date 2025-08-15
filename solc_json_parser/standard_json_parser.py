@@ -1,6 +1,7 @@
 import subprocess
 import json
 import os
+import re
 from typing import Tuple, Callable, List, Union, Optional, Dict
 from functools import cached_property, cache
 
@@ -11,6 +12,48 @@ from .ast_shared import SolidityAstError, solc_bin
 from .base_parser import BaseParser
 from .fields import Function
 import sys
+
+
+def _preprocess_etherscan_json(etherscan_json_path: str) -> Union[dict, str]:
+    """
+    Preprocess etherscan JSON file and return standard JSON dict or source code string.
+    
+    Args:
+        etherscan_json_path: Path to etherscan JSON file
+        
+    Returns:
+        dict: Standard JSON input dict for multi-file projects
+        str: Source code string for single-file projects
+    """
+    with open(etherscan_json_path, 'r', encoding='utf-8') as f:
+        etherscan_data = json.load(f)
+    
+    source_code = etherscan_data["SourceCode"]
+    
+    # Handle different etherscan formats
+    try:
+        # Try parsing as standard JSON (with double braces {{ }})
+        if source_code.startswith('{{') and source_code.endswith('}}'):
+            dict_source_code = json.loads(source_code[1:-1])
+        else:
+            # Try parsing as standard JSON (with single braces { })
+            dict_source_code = json.loads(source_code)
+        
+        # If it's a multi-file project with standard JSON format, return standard JSON dict
+        if isinstance(dict_source_code, dict) and "sources" in dict_source_code:
+            # Create standard JSON input like etherscan_json_to_standard_json.py
+            OUTPUT_SELECT_ALL = {'*': {'*': [ '*' ], '': ['ast']}}
+            solc_input = dict_source_code.copy()
+            solc_input["settings"] = {"outputSelection": OUTPUT_SELECT_ALL}
+            return solc_input
+        else:
+            # Single source code, return as string
+            return source_code
+            
+    except json.JSONDecodeError:
+        # If JSON parsing fails, treat as single source code
+        return source_code
+
 
 def node_contains(src_str: str, pc_source: dict) -> bool:
     """
@@ -55,6 +98,7 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
     # opcodes list (including operand datasize information for the opcode)
     # Example path in standard json: '.contracts."FILE_PATH.SOL"."CONTRACT_NAME".evm.deployedBytecode.opcodes'
     opcodes = evm[evm_key]['opcodes'].split()
+
     # source code mapping blocks
     # Example path in standard json: '.contracts."FILE_PATH.SOL"."CONTRACT_NAME".evm.legacyAssembly.".data"."0".".code"'
     code = evm['legacyAssembly']['.code'] if deploy else evm['legacyAssembly']['.data']['0']['.code']
@@ -91,10 +135,10 @@ def build_pc2idx(evm: dict, deploy: bool = False) -> Tuple[list, dict, dict]:
             except Exception as e:
                 print(f'error: {e}')
                 continue
-            op_idx += 1
+            if datasize != 0:
+                op_idx += 1
 
         size += datasize
-        # print(f'PC {offset:4} IDX: {idx:4} datasize: {datasize:2} {c}')
         idx += 1
         offset += int(size / 2)
         op_idx += 1
@@ -201,10 +245,11 @@ def override_settings(input_json):
 
 
 class StandardJsonParser(BaseParser):
-    def __init__(self, input_json: Union[dict, str], version: str, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None,
+    def __init__(self, input_json: Union[dict, str], version: str = None, solc_bin_resolver: Callable[[str], str] = solc_bin, cwd: Optional[str] = None,
                  retry_num: Optional[int]=0,
                  try_install_solc: Optional[bool]=False,
-                 solc_options: Optional[Dict] = {}):
+                 solc_options: Optional[Dict] = {},
+                 etherscan: bool = False):
         if retry_num is not None and retry_num > 0:
             raise Exception('StandardJsonParser does not support retry')
 
@@ -216,7 +261,26 @@ class StandardJsonParser(BaseParser):
 
         super().__init__()
         self.file_path = None
-        self.solc_version: str = version
+        
+        # Handle etherscan JSON preprocessing
+        if etherscan and isinstance(input_json, str) and not input_json.startswith('{'):
+            # input_json is a file path to etherscan JSON
+            with open(input_json, 'r', encoding='utf-8') as f:
+                etherscan_data = json.load(f)
+            
+            # Extract version from etherscan data if not provided
+            if version is None:
+                version = etherscan_data.get("CompilerVersion", "0.8.0")
+                # Clean up version string (remove commit info)
+                version_match = re.search(r'(\d+\.\d+\.\d+)', version)
+                if version_match:
+                    version = version_match.group(1)
+            
+            # Preprocess the etherscan JSON
+            input_json = _preprocess_etherscan_json(input_json)
+        
+        self.solc_version: str = version or "0.8.0"
+        
         try:
             # try parse as json
             self.input_json: dict = input_json if isinstance(input_json, dict) else json.loads(input_json)
@@ -372,6 +436,7 @@ class StandardJsonParser(BaseParser):
         evms = evms_by_contract_name(self.output_json, contract_name)
         for _, evm in evms:
             code, pc2idx, *_ = self.__build_pc2idx(evm, deploy)
+
             result = source_by_pc(code, pc2idx, self.input_json, self.output_json, pc, resolve_yul_block=self.source_by_yul_block)
             if result:
                 return result
