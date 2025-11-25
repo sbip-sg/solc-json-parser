@@ -284,7 +284,8 @@ def override_settings(input_json, etherscan: bool = False):
     if not etherscan:
         s.assoc_in(input_json, ["settings", "optimizer", "enabled"], False)
     s.assoc_in(input_json, ["settings", "outputSelection"], {"*": {"*": ["*"], "": ["ast"]}})
-    s.assoc_in(input_json, ["settings", "metadata"], {"bytecodeHash": "none"})  # equiv. of solc --metadata=none
+    if "metadata" in input_json.get("settings", {}):
+        s.assoc_in(input_json, ["settings", "metadata"], {"bytecodeHash": "none"})  # equiv. of solc --metadata=none
 
     input_json["language"] = input_json.get("language", "Solidity")
     return input_json
